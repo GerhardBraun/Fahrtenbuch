@@ -24,6 +24,31 @@ export function zielText(ort: string, strasse: string): string {
   return strasse.trim() ? `${ort.trim()}, ${strasse.trim()}` : ort.trim()
 }
 
+/**
+ * Vereinfachte km-Eingabe: 1-2 Ziffern = letzte zwei Stellen des km-Stands
+ * (mit Hunderterübergang), 3 Ziffern = letzte drei Stellen (mit Tausenderübergang),
+ * ab 4 Ziffern = vollständiger km-Stand.
+ */
+export function resolveKmEingabe(eingabe: string, lastKmStand: number): number {
+  const digits = eingabe.trim()
+  if (!/^\d+$/.test(digits)) return NaN
+  const n = Number(digits)
+
+  if (digits.length === 3) {
+    const basis = Math.floor(lastKmStand / 1000) * 1000
+    let kandidat = basis + n
+    if (kandidat <= lastKmStand) kandidat += 1000
+    return kandidat
+  }
+  if (digits.length <= 2) {
+    const basis = Math.floor(lastKmStand / 100) * 100
+    let kandidat = basis + n
+    if (kandidat <= lastKmStand) kandidat += 100
+    return kandidat
+  }
+  return n
+}
+
 function gleich(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase()
 }
@@ -112,23 +137,15 @@ interface EinzelfahrtInput {
 export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
   const { fahrzeug, datum, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte, dienstlich } = input
   const roundTripKm = kmStandEnde - lastKmStand
+  const kmHinIst = Math.round(roundTripKm / 2)
+  const kmRueckIst = roundTripKm - kmHinIst
 
-  let kmHin: number
-  let kmRueck: number
-  let dauerHin: number
-  let dauerRueck: number
-
-  if (werte) {
-    kmHin = werte.km
-    kmRueck = werte.km
-    dauerHin = werte.dauerMin
-    dauerRueck = werte.dauerMin
-  } else {
-    kmHin = Math.round(roundTripKm / 2)
-    kmRueck = roundTripKm - kmHin
-    dauerHin = estimateDauerMin(fahrzeug, kmHin)
-    dauerRueck = estimateDauerMin(fahrzeug, kmRueck)
-  }
+  // km/Fahrzeit aus Ziel/Ziel-und-Zweck übernehmen, aber nur wenn dort tatsächlich ein Wert
+  // (>0) hinterlegt ist – sonst die Ist-Werte aus der Eingabe verwenden statt mit 0 zu überschreiben.
+  const kmHin = werte && werte.km > 0 ? werte.km : kmHinIst
+  const kmRueck = werte && werte.km > 0 ? werte.km : kmRueckIst
+  const dauerHin = werte && werte.dauerMin > 0 ? werte.dauerMin : estimateDauerMin(fahrzeug, kmHin)
+  const dauerRueck = werte && werte.dauerMin > 0 ? werte.dauerMin : estimateDauerMin(fahrzeug, kmRueck)
 
   const ankunftHin = addMinutes(abfahrt, dauerHin)
   const abfahrtRueck = subMinutes(ankunft, dauerRueck)
@@ -183,16 +200,8 @@ interface EtappeInput {
 export function computeEtappe(input: EtappeInput): Etappe {
   const { fahrzeug, datum, start, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte, dienstlich } = input
 
-  let strecke: number
-  let ankunftEndgueltig: string
-
-  if (werte) {
-    strecke = werte.km
-    ankunftEndgueltig = addMinutes(abfahrt, werte.dauerMin)
-  } else {
-    strecke = kmStandEnde - lastKmStand
-    ankunftEndgueltig = ankunft
-  }
+  const strecke = werte && werte.km > 0 ? werte.km : kmStandEnde - lastKmStand
+  const ankunftEndgueltig = werte && werte.dauerMin > 0 ? addMinutes(abfahrt, werte.dauerMin) : ankunft
 
   return {
     id: newId(),

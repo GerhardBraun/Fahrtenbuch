@@ -192,6 +192,11 @@ button.primary {
   margin: -0.4rem 0 0;
 }
 
+.km-vorschau {
+  color: #60a5fa;
+  font-size: 0.8rem;
+}
+
 .info {
   background: #1e1e1e;
   padding: 0.5rem 0.7rem;

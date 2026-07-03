@@ -8,6 +8,7 @@ import {
   findZielZweck,
   mitHistorieEintrag,
   newId,
+  resolveKmEingabe,
   zielText,
 } from '../logic'
 import { ortVorschlaege, strasseVorschlaege, zweckVorschlaege, type Vorschlag } from '../suggestions'
@@ -64,6 +65,7 @@ export default function FahrtForm({
   const standort = offenerStandort(etappen, fahrzeug)
   const start = standort ? standort.ziel : ZUHAUSE
   const lastKmStand = kmStaende[fahrzeug]
+  const kmVorschau = kmStandEnde.trim() ? resolveKmEingabe(kmStandEnde, lastKmStand) : null
 
   useEffect(() => {
     if (modus === 'etappe') {
@@ -95,14 +97,14 @@ export default function FahrtForm({
 
   async function speichern(dienstlich: boolean) {
     setMeldung('')
-    const kmEnde = Number(kmStandEnde)
+    const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
 
     if (modus === 'einzel') {
       if (!ort.trim() || !zweck.trim() || !abfahrt || !ankunft || !kmStandEnde) {
         setMeldung('Bitte alle Felder ausfüllen.')
         return
       }
-      if (kmEnde <= lastKmStand) {
+      if (Number.isNaN(kmEnde) || kmEnde <= lastKmStand) {
         setMeldung(`km-Stand muss größer als der letzte Stand (${lastKmStand}) sein.`)
         return
       }
@@ -130,7 +132,7 @@ export default function FahrtForm({
         setMeldung('Bitte alle Felder ausfüllen.')
         return
       }
-      if (kmEnde <= lastKmStand) {
+      if (Number.isNaN(kmEnde) || kmEnde <= lastKmStand) {
         setMeldung(`km-Stand muss größer als der letzte Stand (${lastKmStand}) sein.`)
         return
       }
@@ -155,7 +157,7 @@ export default function FahrtForm({
   }
 
   function berechneEinwegWerte() {
-    const kmEnde = Number(kmStandEnde)
+    const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
     const roundTripKm = kmEnde > lastKmStand ? kmEnde - lastKmStand : 0
     const km = Math.round(roundTripKm / 2)
     return { km, dauerMin: estimateDauerMin(fahrzeug, km) }
@@ -308,14 +310,18 @@ export default function FahrtForm({
       </div>
 
       <label>
-        km-Stand (nach der Fahrt)
+        km-Stand (nach der Fahrt) – 1-2 Ziffern = letzte zwei Stellen, 3 Ziffern = letzte drei Stellen
         <input
-          type="number"
+          type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
           value={kmStandEnde}
           onChange={(e) => setKmStandEnde(e.target.value)}
           placeholder={`zuletzt: ${lastKmStand}`}
         />
+        {kmVorschau !== null && !Number.isNaN(kmVorschau) && String(kmVorschau) !== kmStandEnde.trim() && (
+          <span className="km-vorschau">→ {kmVorschau}</span>
+        )}
       </label>
 
       {meldung && <p className="meldung">{meldung}</p>}
