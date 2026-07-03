@@ -17,8 +17,8 @@ export default defineConfig({
         start_url: '/Fahrtenbuch/',
         scope: '/Fahrtenbuch/',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#2563eb',
+        background_color: '#121212',
+        theme_color: '#121212',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

@@ -132,9 +132,12 @@ export function computeEtappe(input: EtappeInput): Etappe {
   }
 }
 
-export function findRoute(routen: Route[], zielText: string): Route | undefined {
-  const normalized = zielText.trim().toLowerCase()
-  return routen.find(
-    (r) => `${r.ort}, ${r.strasse}`.toLowerCase() === normalized || r.name.toLowerCase() === normalized,
-  )
+export function findRoute(routen: Route[], ort: string, strasse: string): Route | undefined {
+  const ortN = ort.trim().toLowerCase()
+  const strasseN = strasse.trim().toLowerCase()
+  return routen.find((r) => r.ort.trim().toLowerCase() === ortN && r.strasse.trim().toLowerCase() === strasseN)
+}
+
+export function zielText(ort: string, strasse: string): string {
+  return strasse.trim() ? `${ort.trim()}, ${strasse.trim()}` : ort.trim()
 }

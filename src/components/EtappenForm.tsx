@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { computeEtappe, findRoute } from '../logic'
+import { useEffect, useMemo, useState } from 'react'
+import { computeEtappe, findRoute, zielText } from '../logic'
 import { nowTime, today } from '../timeUtils'
 import type { Etappe, FahrzeugId, KmStaende, Route } from '../types'
 import { FAHRZEUGE, ZUHAUSE } from '../types'
@@ -20,7 +20,8 @@ function offenerStandort(etappen: Etappe[], fahrzeug: FahrzeugId): Etappe | null
 
 export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Props) {
   const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
-  const [ziel, setZiel] = useState('')
+  const [ort, setOrt] = useState('')
+  const [strasse, setStrasse] = useState('')
   const [zweck, setZweck] = useState('')
   const [abfahrt, setAbfahrt] = useState('')
   const [ankunft, setAnkunft] = useState(nowTime())
@@ -32,13 +33,29 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
   const start = standort ? standort.ziel : ZUHAUSE
   const lastKmStand = kmStaende[fahrzeug]
 
+  const orte = useMemo(() => [...new Set(routen.map((r) => r.ort))], [routen])
+  const strassen = useMemo(() => {
+    const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === ort.trim().toLowerCase())
+    const quelle = treffer.length > 0 ? treffer : routen
+    return [...new Set(quelle.map((r) => r.strasse))]
+  }, [routen, ort])
+
+  function handleOrtChange(value: string) {
+    setOrt(value)
+    if (!strasse) {
+      const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === value.trim().toLowerCase())
+      if (treffer.length === 1) setStrasse(treffer[0].strasse)
+    }
+  }
+
   useEffect(() => {
     setAbfahrt(standort ? standort.ankunft : '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fahrzeug])
 
   function resetForm() {
-    setZiel('')
+    setOrt('')
+    setStrasse('')
     setZweck('')
     setAnkunft(nowTime())
     setKmStandEnde('')
@@ -50,10 +67,10 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
     setMeldung('')
 
     const kmEnde = Number(kmStandEnde)
-    const zielText = zurueck ? ZUHAUSE : ziel.trim()
+    const ziel = zurueck ? ZUHAUSE : zielText(ort, strasse)
     const zweckText = zurueck ? 'Rückfahrt' : zweck.trim()
 
-    if (!zielText || !zweckText || !abfahrt || !ankunft || !kmStandEnde) {
+    if (!ziel || !zweckText || !abfahrt || !ankunft || !kmStandEnde) {
       setMeldung('Bitte alle Felder ausfüllen.')
       return
     }
@@ -62,12 +79,12 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
       return
     }
 
-    const route = zurueck ? undefined : findRoute(routen, ziel)
+    const route = zurueck ? undefined : findRoute(routen, ort, strasse)
     const neue = computeEtappe({
       fahrzeug,
       datum: today(),
       start,
-      ziel: route ? `${route.ort}, ${route.strasse}` : zielText,
+      ziel,
       zweck: zweckText,
       abfahrt,
       ankunft,
@@ -114,18 +131,21 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
       {!zurueck && (
         <>
           <label>
-            Ziel
-            <input
-              list="routen-liste-etappe"
-              value={ziel}
-              onChange={(e) => setZiel(e.target.value)}
-              placeholder="Ort, Straße"
-            />
-            <datalist id="routen-liste-etappe">
-              {routen.map((r) => (
-                <option key={r.id} value={`${r.ort}, ${r.strasse}`}>
-                  {r.name}
-                </option>
+            Ort
+            <input list="orte-liste-etappe" value={ort} onChange={(e) => handleOrtChange(e.target.value)} />
+            <datalist id="orte-liste-etappe">
+              {orte.map((o) => (
+                <option key={o} value={o} />
+              ))}
+            </datalist>
+          </label>
+
+          <label>
+            Straße
+            <input list="strassen-liste-etappe" value={strasse} onChange={(e) => setStrasse(e.target.value)} />
+            <datalist id="strassen-liste-etappe">
+              {strassen.map((s) => (
+                <option key={s} value={s} />
               ))}
             </datalist>
           </label>

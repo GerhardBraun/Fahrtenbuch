@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { computeEinzelfahrt, findRoute } from '../logic'
+import { useMemo, useState } from 'react'
+import { computeEinzelfahrt, findRoute, zielText } from '../logic'
 import { nowTime, today } from '../timeUtils'
 import type { Etappe, FahrzeugId, KmStaende, Route } from '../types'
 import { FAHRZEUGE } from '../types'
@@ -12,7 +12,8 @@ interface Props {
 
 export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
   const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
-  const [ziel, setZiel] = useState('')
+  const [ort, setOrt] = useState('')
+  const [strasse, setStrasse] = useState('')
   const [zweck, setZweck] = useState('')
   const [abfahrt, setAbfahrt] = useState('')
   const [ankunft, setAnkunft] = useState(nowTime())
@@ -21,8 +22,24 @@ export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
 
   const lastKmStand = kmStaende[fahrzeug]
 
+  const orte = useMemo(() => [...new Set(routen.map((r) => r.ort))], [routen])
+  const strassen = useMemo(() => {
+    const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === ort.trim().toLowerCase())
+    const quelle = treffer.length > 0 ? treffer : routen
+    return [...new Set(quelle.map((r) => r.strasse))]
+  }, [routen, ort])
+
+  function handleOrtChange(value: string) {
+    setOrt(value)
+    if (!strasse) {
+      const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === value.trim().toLowerCase())
+      if (treffer.length === 1) setStrasse(treffer[0].strasse)
+    }
+  }
+
   function resetForm() {
-    setZiel('')
+    setOrt('')
+    setStrasse('')
     setZweck('')
     setAbfahrt('')
     setAnkunft(nowTime())
@@ -34,7 +51,7 @@ export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
     setMeldung('')
 
     const kmEnde = Number(kmStandEnde)
-    if (!ziel.trim() || !zweck.trim() || !abfahrt || !ankunft || !kmStandEnde) {
+    if (!ort.trim() || !zweck.trim() || !abfahrt || !ankunft || !kmStandEnde) {
       setMeldung('Bitte alle Felder ausfüllen.')
       return
     }
@@ -43,11 +60,11 @@ export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
       return
     }
 
-    const route = findRoute(routen, ziel)
+    const route = findRoute(routen, ort, strasse)
     const neue = computeEinzelfahrt({
       fahrzeug,
       datum: today(),
-      ziel: route ? `${route.ort}, ${route.strasse}` : ziel.trim(),
+      ziel: zielText(ort, strasse),
       zweck: zweck.trim(),
       abfahrt,
       ankunft,
@@ -82,18 +99,21 @@ export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
       </label>
 
       <label>
-        Ziel
-        <input
-          list="routen-liste"
-          value={ziel}
-          onChange={(e) => setZiel(e.target.value)}
-          placeholder="Ort, Straße"
-        />
-        <datalist id="routen-liste">
-          {routen.map((r) => (
-            <option key={r.id} value={`${r.ort}, ${r.strasse}`}>
-              {r.name}
-            </option>
+        Ort
+        <input list="orte-liste" value={ort} onChange={(e) => handleOrtChange(e.target.value)} />
+        <datalist id="orte-liste">
+          {orte.map((o) => (
+            <option key={o} value={o} />
+          ))}
+        </datalist>
+      </label>
+
+      <label>
+        Straße
+        <input list="strassen-liste" value={strasse} onChange={(e) => setStrasse(e.target.value)} />
+        <datalist id="strassen-liste">
+          {strassen.map((s) => (
+            <option key={s} value={s} />
           ))}
         </datalist>
       </label>
