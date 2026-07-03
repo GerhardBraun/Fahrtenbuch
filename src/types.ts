@@ -53,6 +53,7 @@ export interface Etappe {
   ankunft: string // HH:MM
   kmStand: number
   strecke: number
+  dienstlich: boolean
   exportiert: boolean
 }
 

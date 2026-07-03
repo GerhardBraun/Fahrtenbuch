@@ -28,9 +28,14 @@ export default function Verlauf({ etappen, onChange }: Props) {
               <span>
                 {e.datum} · {e.fahrzeug}
               </span>
-              <button type="button" onClick={() => handleDelete(e.id)}>
-                Löschen
-              </button>
+              <div className="segmented">
+                <button type="button" onClick={() => handleUpdate(e.id, { dienstlich: !e.dienstlich })}>
+                  {e.dienstlich ? 'dienstlich' : 'privat'}
+                </button>
+                <button type="button" onClick={() => handleDelete(e.id)}>
+                  Löschen
+                </button>
+              </div>
             </div>
             <div className="verlauf-felder">
               <label>

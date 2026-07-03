@@ -20,6 +20,7 @@ export default function ExportView({ etappen, onChange }: Props) {
 
   const gefiltert = useMemo(() => {
     return etappen
+      .filter((e) => e.dienstlich)
       .filter((e) => (von ? e.datum >= von : true))
       .filter((e) => (bis ? e.datum <= bis : true))
       .filter((e) => (nurNichtExportiert ? !e.exportiert : true))
@@ -62,6 +63,7 @@ export default function ExportView({ etappen, onChange }: Props) {
   return (
     <div className="form">
       <h2>Export</h2>
+      <p className="hinweis">Private Fahrten werden nicht mit exportiert.</p>
 
       <label>
         Von

@@ -99,6 +99,68 @@ textarea::placeholder {
   border-color: #3b82f6;
 }
 
+.modus-zeile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modus-toggle {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.modus-toggle button {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+  background: #1e1e1e;
+  color: #e8e8e8;
+  font-size: 0.95rem;
+}
+
+.modus-toggle button.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+.fahrzeug-icons {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.fahrzeug-icons button {
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+  background: #1e1e1e;
+  color: #aaa;
+}
+
+.fahrzeug-icons button.active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+.zeit-zeile {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.zeit-zeile label {
+  flex: 1;
+  min-width: 0;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid #3a3a3a;
@@ -155,8 +217,8 @@ button.primary {
   border-radius: 0;
   background: #1a1a1a;
   color: #aaa;
-  padding: 0.9rem 0.3rem;
-  font-size: 0.85rem;
+  padding: 0.8rem 0.1rem;
+  font-size: 0.78rem;
 }
 
 .tabbar button.active {
@@ -164,20 +226,65 @@ button.primary {
   font-weight: 700;
 }
 
-.tabelle {
-  width: 100%;
-  border-collapse: collapse;
+.ziel-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.ziel-liste li {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #2a2a2a;
+  cursor: pointer;
+}
+
+.werte-zeile {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.werte-zeile label {
+  flex: 1;
+  min-width: 0;
+}
+
+.aktionen {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.aktionen button {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
   font-size: 0.85rem;
 }
 
-.tabelle input {
-  padding: 0.3rem;
-  width: 100%;
+.ziel-liste li:last-child {
+  border-bottom: none;
 }
 
-.tabelle th,
-.tabelle td {
-  padding: 0.2rem;
+.ziel-liste li:hover {
+  background: #1e1e1e;
+}
+
+.ziel-liste li.selected {
+  background: #1e2a45;
+  color: #cfe0ff;
+}
+
+.ziel-liste li.hinweis {
+  color: #999;
+  cursor: default;
+}
+
+.ziel-liste li.hinweis:hover {
+  background: none;
 }
 
 .verlauf-liste {

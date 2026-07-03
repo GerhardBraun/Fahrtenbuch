@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import EinzelfahrtForm from './components/EinzelfahrtForm'
-import EtappenForm from './components/EtappenForm'
+import Daten from './components/Daten'
 import ExportView from './components/Export'
+import FahrtForm from './components/FahrtForm'
 import Verlauf from './components/Verlauf'
 import Zielverwaltung from './components/Zielverwaltung'
 import {
@@ -18,14 +18,14 @@ import {
 } from './storage'
 import type { Etappe, Historie, KmStaende, Ziel, ZielZweck } from './types'
 
-type Tab = 'fahrt' | 'etappen' | 'ziele' | 'verlauf' | 'export'
+type Tab = 'fahrt' | 'ziele' | 'verlauf' | 'export' | 'daten'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fahrt', label: 'Fahrt' },
-  { id: 'etappen', label: 'Etappen' },
   { id: 'ziele', label: 'Ziele' },
   { id: 'verlauf', label: 'Verlauf' },
   { id: 'export', label: 'Export' },
+  { id: 'daten', label: 'Daten' },
 ]
 
 export default function App() {
@@ -94,25 +94,15 @@ export default function App() {
     <div className="app">
       <main className="content">
         {tab === 'fahrt' && (
-          <EinzelfahrtForm
-            ziele={ziele}
-            zieleZweck={zieleZweck}
-            historie={historie}
-            kmStaende={kmStaende}
-            onSave={addEtappen}
-            onZieleChange={updateZiele}
-            onZieleZweckChange={updateZieleZweck}
-            onHistorieChange={updateHistorie}
-          />
-        )}
-        {tab === 'etappen' && (
-          <EtappenForm
+          <FahrtForm
             ziele={ziele}
             zieleZweck={zieleZweck}
             historie={historie}
             kmStaende={kmStaende}
             etappen={etappen}
             onSave={addEtappen}
+            onZieleChange={updateZiele}
+            onZieleZweckChange={updateZieleZweck}
             onHistorieChange={updateHistorie}
           />
         )}
@@ -126,6 +116,16 @@ export default function App() {
         )}
         {tab === 'verlauf' && <Verlauf etappen={etappen} onChange={updateEtappen} />}
         {tab === 'export' && <ExportView etappen={etappen} onChange={updateEtappen} />}
+        {tab === 'daten' && (
+          <Daten
+            historie={historie}
+            ziele={ziele}
+            zieleZweck={zieleZweck}
+            onHistorieChange={updateHistorie}
+            onZieleChange={updateZiele}
+            onZieleZweckChange={updateZieleZweck}
+          />
+        )}
       </main>
       <nav className="tabbar">
         {TABS.map((t) => (

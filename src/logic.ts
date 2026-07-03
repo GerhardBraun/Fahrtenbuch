@@ -59,6 +59,43 @@ export function mitHistorieEintrag(historie: Historie, feld: keyof Historie, wer
   return { ...historie, [feld]: [...historie[feld], w] }
 }
 
+function mergeListe(bestehend: string[], neu: string[]): string[] {
+  const out = [...bestehend]
+  for (const w of neu) {
+    if (typeof w === 'string' && w.trim() && !out.some((e) => gleich(e, w))) out.push(w)
+  }
+  return out
+}
+
+/** Bestehende Einträge bleiben unverändert; nur neue (nach Ort/Straße[/Zweck]) werden ergänzt. */
+export function mergeHistorien(bestehend: Historie, importiert: Historie): Historie {
+  return {
+    orte: mergeListe(bestehend.orte, importiert.orte ?? []),
+    strassen: mergeListe(bestehend.strassen, importiert.strassen ?? []),
+    zwecke: mergeListe(bestehend.zwecke, importiert.zwecke ?? []),
+  }
+}
+
+export function mergeZieleListen(bestehend: Ziel[], importiert: Ziel[]): Ziel[] {
+  const out = [...bestehend]
+  for (const z of importiert) {
+    if (!out.some((e) => gleich(e.ort, z.ort) && gleich(e.strasse, z.strasse))) {
+      out.push({ ...z, id: newId('z-') })
+    }
+  }
+  return out
+}
+
+export function mergeZielZweckListen(bestehend: ZielZweck[], importiert: ZielZweck[]): ZielZweck[] {
+  const out = [...bestehend]
+  for (const z of importiert) {
+    if (!out.some((e) => gleich(e.ort, z.ort) && gleich(e.strasse, z.strasse) && gleich(e.zweck, z.zweck))) {
+      out.push({ ...z, id: newId('zz-') })
+    }
+  }
+  return out
+}
+
 interface EinzelfahrtInput {
   fahrzeug: FahrzeugId
   datum: string
@@ -69,10 +106,11 @@ interface EinzelfahrtInput {
   kmStandEnde: number
   lastKmStand: number
   werte?: FahrzeugWerte
+  dienstlich: boolean
 }
 
 export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
-  const { fahrzeug, datum, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte } = input
+  const { fahrzeug, datum, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte, dienstlich } = input
   const roundTripKm = kmStandEnde - lastKmStand
 
   let kmHin: number
@@ -106,6 +144,7 @@ export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
     ankunft: ankunftHin,
     kmStand: lastKmStand + kmHin,
     strecke: kmHin,
+    dienstlich,
     exportiert: false,
   }
 
@@ -120,6 +159,7 @@ export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
     ankunft,
     kmStand: kmStandEnde,
     strecke: kmRueck,
+    dienstlich,
     exportiert: false,
   }
 
@@ -137,10 +177,11 @@ interface EtappeInput {
   kmStandEnde: number
   lastKmStand: number
   werte?: FahrzeugWerte
+  dienstlich: boolean
 }
 
 export function computeEtappe(input: EtappeInput): Etappe {
-  const { fahrzeug, datum, start, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte } = input
+  const { fahrzeug, datum, start, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte, dienstlich } = input
 
   let strecke: number
   let ankunftEndgueltig: string
@@ -164,6 +205,7 @@ export function computeEtappe(input: EtappeInput): Etappe {
     ankunft: ankunftEndgueltig,
     kmStand: lastKmStand + strecke,
     strecke,
+    dienstlich,
     exportiert: false,
   }
 }

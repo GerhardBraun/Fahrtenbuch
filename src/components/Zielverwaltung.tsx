@@ -39,7 +39,12 @@ export default function Zielverwaltung({ ziele, zieleZweck, onZieleChange, onZie
   )
 }
 
+function enthaelt(text: string, query: string): boolean {
+  return text.toLowerCase().includes(query.trim().toLowerCase())
+}
+
 function ZieleListe({ ziele, onChange }: { ziele: Ziel[]; onChange: (ziele: Ziel[]) => Promise<void> }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [ort, setOrt] = useState('')
   const [strasse, setStrasse] = useState('')
   const [radKm, setRadKm] = useState('')
@@ -47,20 +52,18 @@ function ZieleListe({ ziele, onChange }: { ziele: Ziel[]; onChange: (ziele: Ziel
   const [autoKm, setAutoKm] = useState('')
   const [autoMin, setAutoMin] = useState('')
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    if (!ort.trim()) return
+  function laden(z: Ziel) {
+    setSelectedId(z.id)
+    setOrt(z.ort)
+    setStrasse(z.strasse)
+    setRadKm(String(z.werte.Rad.km))
+    setRadMin(String(z.werte.Rad.dauerMin))
+    setAutoKm(String(z.werte.Auto.km))
+    setAutoMin(String(z.werte.Auto.dauerMin))
+  }
 
-    const neu: Ziel = {
-      id: newId('z-'),
-      ort: ort.trim(),
-      strasse: strasse.trim(),
-      werte: {
-        Rad: { km: Number(radKm) || 0, dauerMin: Number(radMin) || 0 },
-        Auto: { km: Number(autoKm) || 0, dauerMin: Number(autoMin) || 0 },
-      },
-    }
-    await onChange([...ziele, neu])
+  function neu() {
+    setSelectedId(null)
     setOrt('')
     setStrasse('')
     setRadKm('')
@@ -69,117 +72,84 @@ function ZieleListe({ ziele, onChange }: { ziele: Ziel[]; onChange: (ziele: Ziel
     setAutoMin('')
   }
 
-  async function handleDelete(id: string) {
-    await onChange(ziele.filter((z) => z.id !== id))
+  async function speichern() {
+    if (!ort.trim()) return
+    const werte = {
+      Rad: { km: Number(radKm) || 0, dauerMin: Number(radMin) || 0 },
+      Auto: { km: Number(autoKm) || 0, dauerMin: Number(autoMin) || 0 },
+    }
+    if (selectedId) {
+      await onChange(ziele.map((z) => (z.id === selectedId ? { ...z, ort: ort.trim(), strasse: strasse.trim(), werte } : z)))
+    } else {
+      const neues: Ziel = { id: newId('z-'), ort: ort.trim(), strasse: strasse.trim(), werte }
+      await onChange([...ziele, neues])
+      setSelectedId(neues.id)
+    }
   }
 
-  async function handleUpdate(id: string, patch: Partial<Ziel>) {
-    await onChange(ziele.map((z) => (z.id === id ? { ...z, ...patch } : z)))
+  async function loeschen() {
+    if (!selectedId) return
+    await onChange(ziele.filter((z) => z.id !== selectedId))
+    neu()
   }
+
+  const gefiltert = ziele
+    .filter((z) => (!ort.trim() || enthaelt(z.ort, ort)) && (!strasse.trim() || enthaelt(z.strasse, strasse)))
+    .sort((a, b) => (a.ort + a.strasse).localeCompare(b.ort + b.strasse))
 
   return (
     <>
-      <table className="tabelle">
-        <thead>
-          <tr>
-            <th>Ort</th>
-            <th>Straße</th>
-            <th>Rad km</th>
-            <th>Rad Min</th>
-            <th>Auto km</th>
-            <th>Auto Min</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {ziele.map((z) => (
-            <tr key={z.id}>
-              <td>
-                <input value={z.ort} onChange={(e) => handleUpdate(z.id, { ort: e.target.value })} />
-              </td>
-              <td>
-                <input value={z.strasse} onChange={(e) => handleUpdate(z.id, { strasse: e.target.value })} />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Rad.km}
-                  onChange={(e) =>
-                    handleUpdate(z.id, { werte: { ...z.werte, Rad: { ...z.werte.Rad, km: Number(e.target.value) } } })
-                  }
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Rad.dauerMin}
-                  onChange={(e) =>
-                    handleUpdate(z.id, {
-                      werte: { ...z.werte, Rad: { ...z.werte.Rad, dauerMin: Number(e.target.value) } },
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Auto.km}
-                  onChange={(e) =>
-                    handleUpdate(z.id, {
-                      werte: { ...z.werte, Auto: { ...z.werte.Auto, km: Number(e.target.value) } },
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Auto.dauerMin}
-                  onChange={(e) =>
-                    handleUpdate(z.id, {
-                      werte: { ...z.werte, Auto: { ...z.werte.Auto, dauerMin: Number(e.target.value) } },
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <button type="button" onClick={() => handleDelete(z.id)}>
-                  Löschen
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <label>
+        Ort
+        <input value={ort} onChange={(e) => setOrt(e.target.value)} />
+      </label>
+      <label>
+        Straße
+        <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
+      </label>
+      <div className="werte-zeile">
+        <label>
+          Rad km
+          <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
+        </label>
+        <label>
+          Rad Min
+          <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
+        </label>
+        <label>
+          Auto km
+          <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
+        </label>
+        <label>
+          Auto Min
+          <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
+        </label>
+      </div>
 
-      <h3>Neues Ziel</h3>
-      <form onSubmit={handleAdd}>
-        <label>
-          Ort
-          <input value={ort} onChange={(e) => setOrt(e.target.value)} />
-        </label>
-        <label>
-          Straße
-          <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
-        </label>
-        <label>
-          Rad: km / Minuten (einfache Strecke)
-          <div className="segmented">
-            <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
-            <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
-          </div>
-        </label>
-        <label>
-          Auto: km / Minuten (einfache Strecke)
-          <div className="segmented">
-            <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
-            <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
-          </div>
-        </label>
-        <button type="submit" className="primary">
-          Ziel speichern
+      <div className="aktionen">
+        <button type="button" className="primary" onClick={speichern}>
+          Speichern
         </button>
-      </form>
+        <button type="button" onClick={loeschen} disabled={!selectedId}>
+          Löschen
+        </button>
+        <button type="button" onClick={neu}>
+          Neu
+        </button>
+      </div>
+
+      <ul className="ziel-liste">
+        {gefiltert.map((z) => (
+          <li
+            key={z.id}
+            className={z.id === selectedId ? 'selected' : ''}
+            onClick={() => laden(z)}
+          >
+            {z.strasse ? `${z.ort}, ${z.strasse}` : z.ort}
+          </li>
+        ))}
+        {gefiltert.length === 0 && <li className="hinweis">Keine Treffer</li>}
+      </ul>
     </>
   )
 }
@@ -191,6 +161,7 @@ function ZielZweckListe({
   zieleZweck: ZielZweck[]
   onChange: (zieleZweck: ZielZweck[]) => Promise<void>
 }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [ort, setOrt] = useState('')
   const [strasse, setStrasse] = useState('')
   const [zweck, setZweck] = useState('')
@@ -199,21 +170,19 @@ function ZielZweckListe({
   const [autoKm, setAutoKm] = useState('')
   const [autoMin, setAutoMin] = useState('')
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    if (!ort.trim() || !zweck.trim()) return
+  function laden(z: ZielZweck) {
+    setSelectedId(z.id)
+    setOrt(z.ort)
+    setStrasse(z.strasse)
+    setZweck(z.zweck)
+    setRadKm(String(z.werte.Rad.km))
+    setRadMin(String(z.werte.Rad.dauerMin))
+    setAutoKm(String(z.werte.Auto.km))
+    setAutoMin(String(z.werte.Auto.dauerMin))
+  }
 
-    const neu: ZielZweck = {
-      id: newId('zz-'),
-      ort: ort.trim(),
-      strasse: strasse.trim(),
-      zweck: zweck.trim(),
-      werte: {
-        Rad: { km: Number(radKm) || 0, dauerMin: Number(radMin) || 0 },
-        Auto: { km: Number(autoKm) || 0, dauerMin: Number(autoMin) || 0 },
-      },
-    }
-    await onChange([...zieleZweck, neu])
+  function neu() {
+    setSelectedId(null)
     setOrt('')
     setStrasse('')
     setZweck('')
@@ -223,125 +192,97 @@ function ZielZweckListe({
     setAutoMin('')
   }
 
-  async function handleDelete(id: string) {
-    await onChange(zieleZweck.filter((z) => z.id !== id))
+  async function speichern() {
+    if (!ort.trim() || !zweck.trim()) return
+    const werte = {
+      Rad: { km: Number(radKm) || 0, dauerMin: Number(radMin) || 0 },
+      Auto: { km: Number(autoKm) || 0, dauerMin: Number(autoMin) || 0 },
+    }
+    if (selectedId) {
+      await onChange(
+        zieleZweck.map((z) =>
+          z.id === selectedId ? { ...z, ort: ort.trim(), strasse: strasse.trim(), zweck: zweck.trim(), werte } : z,
+        ),
+      )
+    } else {
+      const neues: ZielZweck = { id: newId('zz-'), ort: ort.trim(), strasse: strasse.trim(), zweck: zweck.trim(), werte }
+      await onChange([...zieleZweck, neues])
+      setSelectedId(neues.id)
+    }
   }
 
-  async function handleUpdate(id: string, patch: Partial<ZielZweck>) {
-    await onChange(zieleZweck.map((z) => (z.id === id ? { ...z, ...patch } : z)))
+  async function loeschen() {
+    if (!selectedId) return
+    await onChange(zieleZweck.filter((z) => z.id !== selectedId))
+    neu()
   }
+
+  const gefiltert = zieleZweck
+    .filter(
+      (z) =>
+        (!ort.trim() || enthaelt(z.ort, ort)) &&
+        (!strasse.trim() || enthaelt(z.strasse, strasse)) &&
+        (!zweck.trim() || enthaelt(z.zweck, zweck)),
+    )
+    .sort((a, b) => (a.ort + a.strasse + a.zweck).localeCompare(b.ort + b.strasse + b.zweck))
 
   return (
     <>
-      <table className="tabelle">
-        <thead>
-          <tr>
-            <th>Ort</th>
-            <th>Straße</th>
-            <th>Zweck</th>
-            <th>Rad km</th>
-            <th>Rad Min</th>
-            <th>Auto km</th>
-            <th>Auto Min</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {zieleZweck.map((z) => (
-            <tr key={z.id}>
-              <td>
-                <input value={z.ort} onChange={(e) => handleUpdate(z.id, { ort: e.target.value })} />
-              </td>
-              <td>
-                <input value={z.strasse} onChange={(e) => handleUpdate(z.id, { strasse: e.target.value })} />
-              </td>
-              <td>
-                <input value={z.zweck} onChange={(e) => handleUpdate(z.id, { zweck: e.target.value })} />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Rad.km}
-                  onChange={(e) =>
-                    handleUpdate(z.id, { werte: { ...z.werte, Rad: { ...z.werte.Rad, km: Number(e.target.value) } } })
-                  }
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Rad.dauerMin}
-                  onChange={(e) =>
-                    handleUpdate(z.id, {
-                      werte: { ...z.werte, Rad: { ...z.werte.Rad, dauerMin: Number(e.target.value) } },
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Auto.km}
-                  onChange={(e) =>
-                    handleUpdate(z.id, {
-                      werte: { ...z.werte, Auto: { ...z.werte.Auto, km: Number(e.target.value) } },
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <input
-                  type="number"
-                  value={z.werte.Auto.dauerMin}
-                  onChange={(e) =>
-                    handleUpdate(z.id, {
-                      werte: { ...z.werte, Auto: { ...z.werte.Auto, dauerMin: Number(e.target.value) } },
-                    })
-                  }
-                />
-              </td>
-              <td>
-                <button type="button" onClick={() => handleDelete(z.id)}>
-                  Löschen
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <label>
+        Ort
+        <input value={ort} onChange={(e) => setOrt(e.target.value)} />
+      </label>
+      <label>
+        Straße
+        <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
+      </label>
+      <label>
+        Zweck
+        <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
+      </label>
+      <div className="werte-zeile">
+        <label>
+          Rad km
+          <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
+        </label>
+        <label>
+          Rad Min
+          <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
+        </label>
+        <label>
+          Auto km
+          <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
+        </label>
+        <label>
+          Auto Min
+          <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
+        </label>
+      </div>
 
-      <h3>Neu: Ziel und Zweck</h3>
-      <form onSubmit={handleAdd}>
-        <label>
-          Ort
-          <input value={ort} onChange={(e) => setOrt(e.target.value)} />
-        </label>
-        <label>
-          Straße
-          <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
-        </label>
-        <label>
-          Zweck
-          <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
-        </label>
-        <label>
-          Rad: km / Minuten (einfache Strecke)
-          <div className="segmented">
-            <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
-            <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
-          </div>
-        </label>
-        <label>
-          Auto: km / Minuten (einfache Strecke)
-          <div className="segmented">
-            <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
-            <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
-          </div>
-        </label>
-        <button type="submit" className="primary">
+      <div className="aktionen">
+        <button type="button" className="primary" onClick={speichern}>
           Speichern
         </button>
-      </form>
+        <button type="button" onClick={loeschen} disabled={!selectedId}>
+          Löschen
+        </button>
+        <button type="button" onClick={neu}>
+          Neu
+        </button>
+      </div>
+
+      <ul className="ziel-liste">
+        {gefiltert.map((z) => (
+          <li
+            key={z.id}
+            className={z.id === selectedId ? 'selected' : ''}
+            onClick={() => laden(z)}
+          >
+            {z.strasse ? `${z.ort}, ${z.strasse}: ${z.zweck}` : `${z.ort}: ${z.zweck}`}
+          </li>
+        ))}
+        {gefiltert.length === 0 && <li className="hinweis">Keine Treffer</li>}
+      </ul>
     </>
   )
 }

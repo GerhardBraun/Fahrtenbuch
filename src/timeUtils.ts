@@ -20,7 +20,8 @@ export function subMinutes(time: string, minutes: number): string {
 
 export function nowTime(): string {
   const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const gerundet = Math.round((d.getHours() * 60 + d.getMinutes()) / 5) * 5
+  return minutesToTime(gerundet)
 }
 
 export function today(): string {
