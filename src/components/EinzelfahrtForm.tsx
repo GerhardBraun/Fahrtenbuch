@@ -1,17 +1,43 @@
-import { useMemo, useState } from 'react'
-import { computeEinzelfahrt, findRoute, zielText } from '../logic'
+import { useState } from 'react'
+import {
+  computeEinzelfahrt,
+  estimateDauerMin,
+  findWerte,
+  findZiel,
+  findZielZweck,
+  mitHistorieEintrag,
+  newId,
+  zielText,
+} from '../logic'
+import { ortVorschlaege, strasseVorschlaege, zweckVorschlaege, type Vorschlag } from '../suggestions'
 import { nowTime, today } from '../timeUtils'
-import type { Etappe, FahrzeugId, KmStaende, Route } from '../types'
-import { FAHRZEUGE } from '../types'
+import type { Etappe, FahrzeugId, Historie, KmStaende, Ziel, ZielZweck } from '../types'
+import { FAHRZEUGE, leereZielWerte } from '../types'
+import Autocomplete from './Autocomplete'
 
 interface Props {
-  routen: Route[]
+  ziele: Ziel[]
+  zieleZweck: ZielZweck[]
+  historie: Historie
   kmStaende: KmStaende
   onSave: (etappen: Etappe[]) => Promise<void>
+  onZieleChange: (ziele: Ziel[]) => Promise<void>
+  onZieleZweckChange: (zieleZweck: ZielZweck[]) => Promise<void>
+  onHistorieChange: (historie: Historie) => Promise<void>
 }
 
-export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
+export default function EinzelfahrtForm({
+  ziele,
+  zieleZweck,
+  historie,
+  kmStaende,
+  onSave,
+  onZieleChange,
+  onZieleZweckChange,
+  onHistorieChange,
+}: Props) {
   const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
+  const [datum, setDatum] = useState(today())
   const [ort, setOrt] = useState('')
   const [strasse, setStrasse] = useState('')
   const [zweck, setZweck] = useState('')
@@ -22,19 +48,10 @@ export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
 
   const lastKmStand = kmStaende[fahrzeug]
 
-  const orte = useMemo(() => [...new Set(routen.map((r) => r.ort))], [routen])
-  const strassen = useMemo(() => {
-    const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === ort.trim().toLowerCase())
-    const quelle = treffer.length > 0 ? treffer : routen
-    return [...new Set(quelle.map((r) => r.strasse))]
-  }, [routen, ort])
-
-  function handleOrtChange(value: string) {
-    setOrt(value)
-    if (!strasse) {
-      const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === value.trim().toLowerCase())
-      if (treffer.length === 1) setStrasse(treffer[0].strasse)
-    }
+  function anwenden(v: Vorschlag) {
+    if (v.ort !== undefined) setOrt(v.ort)
+    if (v.strasse !== undefined) setStrasse(v.strasse)
+    if (v.zweck !== undefined) setZweck(v.zweck)
   }
 
   function resetForm() {
@@ -60,22 +77,64 @@ export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
       return
     }
 
-    const route = findRoute(routen, ort, strasse)
+    const werte = findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
     const neue = computeEinzelfahrt({
       fahrzeug,
-      datum: today(),
+      datum,
       ziel: zielText(ort, strasse),
       zweck: zweck.trim(),
       abfahrt,
       ankunft,
       kmStandEnde: kmEnde,
       lastKmStand,
-      route,
+      werte,
     })
 
     await onSave(neue)
     resetForm()
     setMeldung('Fahrt gespeichert.')
+  }
+
+  function berechneEinwegWerte() {
+    const kmEnde = Number(kmStandEnde)
+    const roundTripKm = kmEnde > lastKmStand ? kmEnde - lastKmStand : 0
+    const km = Math.round(roundTripKm / 2)
+    return { km, dauerMin: estimateDauerMin(fahrzeug, km) }
+  }
+
+  async function handleAlsZiel() {
+    setMeldung('')
+    if (!ort.trim()) {
+      setMeldung('Bitte mindestens den Ort eintragen.')
+      return
+    }
+    if (findZiel(ziele, ort, strasse)) {
+      setMeldung('Dieses Ziel gibt es schon in der Zielliste.')
+      return
+    }
+    const werte = leereZielWerte()
+    werte[fahrzeug] = berechneEinwegWerte()
+    await onZieleChange([...ziele, { id: newId('z-'), ort: ort.trim(), strasse: strasse.trim(), werte }])
+    setMeldung('Als Ziel gespeichert.')
+  }
+
+  async function handleAlsZielUndZweck() {
+    setMeldung('')
+    if (!ort.trim() || !zweck.trim()) {
+      setMeldung('Bitte Ort und Zweck eintragen.')
+      return
+    }
+    if (findZielZweck(zieleZweck, ort, strasse, zweck)) {
+      setMeldung('Diese Kombination gibt es schon in der Liste "Ziel und Zweck".')
+      return
+    }
+    const werte = leereZielWerte()
+    werte[fahrzeug] = berechneEinwegWerte()
+    await onZieleZweckChange([
+      ...zieleZweck,
+      { id: newId('zz-'), ort: ort.trim(), strasse: strasse.trim(), zweck: zweck.trim(), werte },
+    ])
+    setMeldung('Als Ziel und Zweck gespeichert.')
   }
 
   return (
@@ -100,27 +159,49 @@ export default function EinzelfahrtForm({ routen, kmStaende, onSave }: Props) {
 
       <label>
         Ort
-        <input list="orte-liste" value={ort} onChange={(e) => handleOrtChange(e.target.value)} />
-        <datalist id="orte-liste">
-          {orte.map((o) => (
-            <option key={o} value={o} />
-          ))}
-        </datalist>
+        <Autocomplete
+          value={ort}
+          onChange={setOrt}
+          onSelect={anwenden}
+          vorschlaege={ortVorschlaege(historie, ziele, zieleZweck, ort)}
+          onSave={() => onHistorieChange(mitHistorieEintrag(historie, 'orte', ort))}
+        />
       </label>
 
       <label>
         Straße
-        <input list="strassen-liste" value={strasse} onChange={(e) => setStrasse(e.target.value)} />
-        <datalist id="strassen-liste">
-          {strassen.map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
+        <Autocomplete
+          value={strasse}
+          onChange={setStrasse}
+          onSelect={anwenden}
+          vorschlaege={strasseVorschlaege(historie, ziele, zieleZweck, strasse)}
+          onSave={() => onHistorieChange(mitHistorieEintrag(historie, 'strassen', strasse))}
+        />
       </label>
 
       <label>
         Anlass/Zweck
-        <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
+        <Autocomplete
+          value={zweck}
+          onChange={setZweck}
+          onSelect={anwenden}
+          vorschlaege={zweckVorschlaege(historie, zieleZweck, zweck)}
+          onSave={() => onHistorieChange(mitHistorieEintrag(historie, 'zwecke', zweck))}
+        />
+      </label>
+
+      <div className="segmented">
+        <button type="button" onClick={handleAlsZiel}>
+          Als Ziel speichern
+        </button>
+        <button type="button" onClick={handleAlsZielUndZweck}>
+          Als Ziel und Zweck speichern
+        </button>
+      </div>
+
+      <label>
+        Datum
+        <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
       </label>
 
       <label>

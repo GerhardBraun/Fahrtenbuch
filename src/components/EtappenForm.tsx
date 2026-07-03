@@ -1,14 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
-import { computeEtappe, findRoute, zielText } from '../logic'
+import { useEffect, useState } from 'react'
+import { computeEtappe, findWerte, mitHistorieEintrag, zielText } from '../logic'
+import { ortVorschlaege, strasseVorschlaege, zweckVorschlaege, type Vorschlag } from '../suggestions'
 import { nowTime, today } from '../timeUtils'
-import type { Etappe, FahrzeugId, KmStaende, Route } from '../types'
+import type { Etappe, FahrzeugId, Historie, KmStaende, Ziel, ZielZweck } from '../types'
 import { FAHRZEUGE, ZUHAUSE } from '../types'
+import Autocomplete from './Autocomplete'
 
 interface Props {
-  routen: Route[]
+  ziele: Ziel[]
+  zieleZweck: ZielZweck[]
+  historie: Historie
   kmStaende: KmStaende
   etappen: Etappe[]
   onSave: (etappen: Etappe[]) => Promise<void>
+  onHistorieChange: (historie: Historie) => Promise<void>
 }
 
 function offenerStandort(etappen: Etappe[], fahrzeug: FahrzeugId): Etappe | null {
@@ -18,8 +23,17 @@ function offenerStandort(etappen: Etappe[], fahrzeug: FahrzeugId): Etappe | null
   return letzte.ziel === ZUHAUSE ? null : letzte
 }
 
-export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Props) {
+export default function EtappenForm({
+  ziele,
+  zieleZweck,
+  historie,
+  kmStaende,
+  etappen,
+  onSave,
+  onHistorieChange,
+}: Props) {
   const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
+  const [datum, setDatum] = useState(today())
   const [ort, setOrt] = useState('')
   const [strasse, setStrasse] = useState('')
   const [zweck, setZweck] = useState('')
@@ -33,19 +47,10 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
   const start = standort ? standort.ziel : ZUHAUSE
   const lastKmStand = kmStaende[fahrzeug]
 
-  const orte = useMemo(() => [...new Set(routen.map((r) => r.ort))], [routen])
-  const strassen = useMemo(() => {
-    const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === ort.trim().toLowerCase())
-    const quelle = treffer.length > 0 ? treffer : routen
-    return [...new Set(quelle.map((r) => r.strasse))]
-  }, [routen, ort])
-
-  function handleOrtChange(value: string) {
-    setOrt(value)
-    if (!strasse) {
-      const treffer = routen.filter((r) => r.ort.trim().toLowerCase() === value.trim().toLowerCase())
-      if (treffer.length === 1) setStrasse(treffer[0].strasse)
-    }
+  function anwenden(v: Vorschlag) {
+    if (v.ort !== undefined) setOrt(v.ort)
+    if (v.strasse !== undefined) setStrasse(v.strasse)
+    if (v.zweck !== undefined) setZweck(v.zweck)
   }
 
   useEffect(() => {
@@ -79,10 +84,10 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
       return
     }
 
-    const route = zurueck ? undefined : findRoute(routen, ort, strasse)
+    const werte = zurueck ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
     const neue = computeEtappe({
       fahrzeug,
-      datum: today(),
+      datum,
       start,
       ziel,
       zweck: zweckText,
@@ -90,7 +95,7 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
       ankunft,
       kmStandEnde: kmEnde,
       lastKmStand,
-      route,
+      werte,
     })
 
     await onSave([neue])
@@ -132,30 +137,43 @@ export default function EtappenForm({ routen, kmStaende, etappen, onSave }: Prop
         <>
           <label>
             Ort
-            <input list="orte-liste-etappe" value={ort} onChange={(e) => handleOrtChange(e.target.value)} />
-            <datalist id="orte-liste-etappe">
-              {orte.map((o) => (
-                <option key={o} value={o} />
-              ))}
-            </datalist>
+            <Autocomplete
+              value={ort}
+              onChange={setOrt}
+              onSelect={anwenden}
+              vorschlaege={ortVorschlaege(historie, ziele, zieleZweck, ort)}
+              onSave={() => onHistorieChange(mitHistorieEintrag(historie, 'orte', ort))}
+            />
           </label>
 
           <label>
             Straße
-            <input list="strassen-liste-etappe" value={strasse} onChange={(e) => setStrasse(e.target.value)} />
-            <datalist id="strassen-liste-etappe">
-              {strassen.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
+            <Autocomplete
+              value={strasse}
+              onChange={setStrasse}
+              onSelect={anwenden}
+              vorschlaege={strasseVorschlaege(historie, ziele, zieleZweck, strasse)}
+              onSave={() => onHistorieChange(mitHistorieEintrag(historie, 'strassen', strasse))}
+            />
           </label>
 
           <label>
             Anlass/Zweck
-            <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
+            <Autocomplete
+              value={zweck}
+              onChange={setZweck}
+              onSelect={anwenden}
+              vorschlaege={zweckVorschlaege(historie, zieleZweck, zweck)}
+              onSave={() => onHistorieChange(mitHistorieEintrag(historie, 'zwecke', zweck))}
+            />
           </label>
         </>
       )}
+
+      <label>
+        Datum
+        <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+      </label>
 
       <label>
         Abfahrtszeit

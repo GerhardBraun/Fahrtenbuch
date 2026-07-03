@@ -1,9 +1,13 @@
 import { get, set } from 'idb-keyval'
-import type { Etappe, KmStaende, Route } from './types'
+import type { Etappe, Historie, KmStaende, Ziel, ZielZweck } from './types'
 
 const ETAPPEN_KEY = 'etappen'
-const ROUTEN_KEY = 'routen'
+const ZIELE_KEY = 'ziele'
+const ZIELE_ZWECK_KEY = 'zieleZweck'
+const HISTORIE_KEY = 'historie'
 const KMSTAENDE_KEY = 'kmstaende'
+
+const LEERE_HISTORIE: Historie = { orte: [], strassen: [], zwecke: [] }
 
 export async function loadEtappen(): Promise<Etappe[]> {
   return (await get<Etappe[]>(ETAPPEN_KEY)) ?? []
@@ -13,12 +17,28 @@ export async function saveEtappen(etappen: Etappe[]): Promise<void> {
   await set(ETAPPEN_KEY, etappen)
 }
 
-export async function loadRouten(): Promise<Route[]> {
-  return (await get<Route[]>(ROUTEN_KEY)) ?? []
+export async function loadZiele(): Promise<Ziel[]> {
+  return (await get<Ziel[]>(ZIELE_KEY)) ?? []
 }
 
-export async function saveRouten(routen: Route[]): Promise<void> {
-  await set(ROUTEN_KEY, routen)
+export async function saveZiele(ziele: Ziel[]): Promise<void> {
+  await set(ZIELE_KEY, ziele)
+}
+
+export async function loadZieleZweck(): Promise<ZielZweck[]> {
+  return (await get<ZielZweck[]>(ZIELE_ZWECK_KEY)) ?? []
+}
+
+export async function saveZieleZweck(zieleZweck: ZielZweck[]): Promise<void> {
+  await set(ZIELE_ZWECK_KEY, zieleZweck)
+}
+
+export async function loadHistorie(): Promise<Historie> {
+  return (await get<Historie>(HISTORIE_KEY)) ?? LEERE_HISTORIE
+}
+
+export async function saveHistorie(historie: Historie): Promise<void> {
+  await set(HISTORIE_KEY, historie)
 }
 
 export async function loadKmStaende(): Promise<KmStaende> {

@@ -1,5 +1,5 @@
 import { addMinutes, subMinutes } from './timeUtils'
-import type { Etappe, FahrzeugId, Route } from './types'
+import type { Etappe, FahrzeugId, FahrzeugWerte, Historie, Ziel, ZielZweck } from './types'
 import { ZUHAUSE } from './types'
 
 /**
@@ -15,9 +15,48 @@ export function estimateDauerMin(fahrzeug: FahrzeugId, km: number): number {
 }
 
 let idCounter = 0
-function newId(): string {
+export function newId(prefix = ''): string {
   idCounter += 1
-  return `${Date.now()}-${idCounter}`
+  return `${prefix}${Date.now()}-${idCounter}`
+}
+
+export function zielText(ort: string, strasse: string): string {
+  return strasse.trim() ? `${ort.trim()}, ${strasse.trim()}` : ort.trim()
+}
+
+function gleich(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase()
+}
+
+export function findZiel(ziele: Ziel[], ort: string, strasse: string): Ziel | undefined {
+  return ziele.find((z) => gleich(z.ort, ort) && gleich(z.strasse, strasse))
+}
+
+export function findZielZweck(zieleZweck: ZielZweck[], ort: string, strasse: string, zweck: string): ZielZweck | undefined {
+  return zieleZweck.find((z) => gleich(z.ort, ort) && gleich(z.strasse, strasse) && gleich(z.zweck, zweck))
+}
+
+/** Ziel-und-Zweck-Treffer geht vor, da spezifischer; sonst Ziel-Treffer. */
+export function findWerte(
+  ziele: Ziel[],
+  zieleZweck: ZielZweck[],
+  fahrzeug: FahrzeugId,
+  ort: string,
+  strasse: string,
+  zweck: string,
+): FahrzeugWerte | undefined {
+  const zz = findZielZweck(zieleZweck, ort, strasse, zweck)
+  if (zz) return zz.werte[fahrzeug]
+  const z = findZiel(ziele, ort, strasse)
+  if (z) return z.werte[fahrzeug]
+  return undefined
+}
+
+export function mitHistorieEintrag(historie: Historie, feld: keyof Historie, wert: string): Historie {
+  const w = wert.trim()
+  if (!w) return historie
+  if (historie[feld].some((e) => gleich(e, w))) return historie
+  return { ...historie, [feld]: [...historie[feld], w] }
 }
 
 interface EinzelfahrtInput {
@@ -29,11 +68,11 @@ interface EinzelfahrtInput {
   ankunft: string
   kmStandEnde: number
   lastKmStand: number
-  route?: Route
+  werte?: FahrzeugWerte
 }
 
 export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
-  const { fahrzeug, datum, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, route } = input
+  const { fahrzeug, datum, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte } = input
   const roundTripKm = kmStandEnde - lastKmStand
 
   let kmHin: number
@@ -41,11 +80,11 @@ export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
   let dauerHin: number
   let dauerRueck: number
 
-  if (route) {
-    kmHin = route.refKm
-    kmRueck = route.refKm
-    dauerHin = route.refDauerMin
-    dauerRueck = route.refDauerMin
+  if (werte) {
+    kmHin = werte.km
+    kmRueck = werte.km
+    dauerHin = werte.dauerMin
+    dauerRueck = werte.dauerMin
   } else {
     kmHin = Math.round(roundTripKm / 2)
     kmRueck = roundTripKm - kmHin
@@ -67,7 +106,6 @@ export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
     ankunft: ankunftHin,
     kmStand: lastKmStand + kmHin,
     strecke: kmHin,
-    routeId: route?.id,
     exportiert: false,
   }
 
@@ -82,7 +120,6 @@ export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
     ankunft,
     kmStand: kmStandEnde,
     strecke: kmRueck,
-    routeId: route?.id,
     exportiert: false,
   }
 
@@ -99,18 +136,18 @@ interface EtappeInput {
   ankunft: string
   kmStandEnde: number
   lastKmStand: number
-  route?: Route
+  werte?: FahrzeugWerte
 }
 
 export function computeEtappe(input: EtappeInput): Etappe {
-  const { fahrzeug, datum, start, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, route } = input
+  const { fahrzeug, datum, start, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte } = input
 
   let strecke: number
   let ankunftEndgueltig: string
 
-  if (route) {
-    strecke = route.refKm
-    ankunftEndgueltig = addMinutes(abfahrt, route.refDauerMin)
+  if (werte) {
+    strecke = werte.km
+    ankunftEndgueltig = addMinutes(abfahrt, werte.dauerMin)
   } else {
     strecke = kmStandEnde - lastKmStand
     ankunftEndgueltig = ankunft
@@ -127,17 +164,6 @@ export function computeEtappe(input: EtappeInput): Etappe {
     ankunft: ankunftEndgueltig,
     kmStand: lastKmStand + strecke,
     strecke,
-    routeId: route?.id,
     exportiert: false,
   }
-}
-
-export function findRoute(routen: Route[], ort: string, strasse: string): Route | undefined {
-  const ortN = ort.trim().toLowerCase()
-  const strasseN = strasse.trim().toLowerCase()
-  return routen.find((r) => r.ort.trim().toLowerCase() === ortN && r.strasse.trim().toLowerCase() === strasseN)
-}
-
-export function zielText(ort: string, strasse: string): string {
-  return strasse.trim() ? `${ort.trim()}, ${strasse.trim()}` : ort.trim()
 }

@@ -7,13 +7,39 @@ export const FAHRZEUGE: { id: FahrzeugId; label: string }[] = [
 
 export const ZUHAUSE = 'Gensungen, Hesslarer Str. 1'
 
-export interface Route {
+export interface FahrzeugWerte {
+  km: number
+  dauerMin: number
+}
+
+export interface ZielWerte {
+  Rad: FahrzeugWerte
+  Auto: FahrzeugWerte
+}
+
+export function leereZielWerte(): ZielWerte {
+  return { Rad: { km: 0, dauerMin: 0 }, Auto: { km: 0, dauerMin: 0 } }
+}
+
+export interface Ziel {
   id: string
-  name: string
   ort: string
   strasse: string
-  refKm: number
-  refDauerMin: number
+  werte: ZielWerte
+}
+
+export interface ZielZweck {
+  id: string
+  ort: string
+  strasse: string
+  zweck: string
+  werte: ZielWerte
+}
+
+export interface Historie {
+  orte: string[]
+  strassen: string[]
+  zwecke: string[]
 }
 
 export interface Etappe {
@@ -27,7 +53,6 @@ export interface Etappe {
   ankunft: string // HH:MM
   kmStand: number
   strecke: number
-  routeId?: string
   exportiert: boolean
 }
 

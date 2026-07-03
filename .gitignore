@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Einmalige Datenimport-Skripte (personenbezogen, nicht fuer das Repo)
+import-*.js

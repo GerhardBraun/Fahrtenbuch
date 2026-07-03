@@ -4,8 +4,19 @@ import EtappenForm from './components/EtappenForm'
 import ExportView from './components/Export'
 import Verlauf from './components/Verlauf'
 import Zielverwaltung from './components/Zielverwaltung'
-import { loadEtappen, loadKmStaende, loadRouten, saveEtappen, saveKmStaende, saveRouten } from './storage'
-import type { Etappe, KmStaende, Route } from './types'
+import {
+  loadEtappen,
+  loadHistorie,
+  loadKmStaende,
+  loadZiele,
+  loadZieleZweck,
+  saveEtappen,
+  saveHistorie,
+  saveKmStaende,
+  saveZiele,
+  saveZieleZweck,
+} from './storage'
+import type { Etappe, Historie, KmStaende, Ziel, ZielZweck } from './types'
 
 type Tab = 'fahrt' | 'etappen' | 'ziele' | 'verlauf' | 'export'
 
@@ -20,15 +31,25 @@ const TABS: { id: Tab; label: string }[] = [
 export default function App() {
   const [tab, setTab] = useState<Tab>('fahrt')
   const [etappen, setEtappen] = useState<Etappe[]>([])
-  const [routen, setRouten] = useState<Route[]>([])
+  const [ziele, setZiele] = useState<Ziel[]>([])
+  const [zieleZweck, setZieleZweck] = useState<ZielZweck[]>([])
+  const [historie, setHistorie] = useState<Historie>({ orte: [], strassen: [], zwecke: [] })
   const [kmStaende, setKmStaende] = useState<KmStaende>({ Rad: 0, Auto: 0 })
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     ;(async () => {
-      const [e, r, k] = await Promise.all([loadEtappen(), loadRouten(), loadKmStaende()])
+      const [e, z, zz, h, k] = await Promise.all([
+        loadEtappen(),
+        loadZiele(),
+        loadZieleZweck(),
+        loadHistorie(),
+        loadKmStaende(),
+      ])
       setEtappen(e)
-      setRouten(r)
+      setZiele(z)
+      setZieleZweck(zz)
+      setHistorie(h)
       setKmStaende(k)
       setLoaded(true)
     })()
@@ -50,9 +71,19 @@ export default function App() {
     await saveEtappen(updated)
   }
 
-  async function updateRouten(updated: Route[]) {
-    setRouten(updated)
-    await saveRouten(updated)
+  async function updateZiele(updated: Ziel[]) {
+    setZiele(updated)
+    await saveZiele(updated)
+  }
+
+  async function updateZieleZweck(updated: ZielZweck[]) {
+    setZieleZweck(updated)
+    await saveZieleZweck(updated)
+  }
+
+  async function updateHistorie(updated: Historie) {
+    setHistorie(updated)
+    await saveHistorie(updated)
   }
 
   if (!loaded) {
@@ -62,11 +93,37 @@ export default function App() {
   return (
     <div className="app">
       <main className="content">
-        {tab === 'fahrt' && <EinzelfahrtForm routen={routen} kmStaende={kmStaende} onSave={addEtappen} />}
-        {tab === 'etappen' && (
-          <EtappenForm routen={routen} kmStaende={kmStaende} etappen={etappen} onSave={addEtappen} />
+        {tab === 'fahrt' && (
+          <EinzelfahrtForm
+            ziele={ziele}
+            zieleZweck={zieleZweck}
+            historie={historie}
+            kmStaende={kmStaende}
+            onSave={addEtappen}
+            onZieleChange={updateZiele}
+            onZieleZweckChange={updateZieleZweck}
+            onHistorieChange={updateHistorie}
+          />
         )}
-        {tab === 'ziele' && <Zielverwaltung routen={routen} onChange={updateRouten} />}
+        {tab === 'etappen' && (
+          <EtappenForm
+            ziele={ziele}
+            zieleZweck={zieleZweck}
+            historie={historie}
+            kmStaende={kmStaende}
+            etappen={etappen}
+            onSave={addEtappen}
+            onHistorieChange={updateHistorie}
+          />
+        )}
+        {tab === 'ziele' && (
+          <Zielverwaltung
+            ziele={ziele}
+            zieleZweck={zieleZweck}
+            onZieleChange={updateZiele}
+            onZieleZweckChange={updateZieleZweck}
+          />
+        )}
         {tab === 'verlauf' && <Verlauf etappen={etappen} onChange={updateEtappen} />}
         {tab === 'export' && <ExportView etappen={etappen} onChange={updateEtappen} />}
       </main>
