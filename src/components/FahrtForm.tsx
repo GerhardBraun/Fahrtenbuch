@@ -159,7 +159,7 @@ export default function FahrtForm({
   function berechneEinwegWerte() {
     const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
     const roundTripKm = kmEnde > lastKmStand ? kmEnde - lastKmStand : 0
-    const km = Math.round(roundTripKm / 2)
+    const km = Math.ceil(roundTripKm / 2)
     return { km, dauerMin: estimateDauerMin(fahrzeug, km) }
   }
 
@@ -310,7 +310,7 @@ export default function FahrtForm({
       </div>
 
       <label>
-        km-Stand (nach der Fahrt) – 1-2 Ziffern = letzte zwei Stellen, 3 Ziffern = letzte drei Stellen
+        km-Stand (nach der Fahrt)
         <input
           type="text"
           inputMode="numeric"

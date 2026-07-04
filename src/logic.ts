@@ -166,8 +166,11 @@ interface EinzelfahrtInput {
 export function computeEinzelfahrt(input: EinzelfahrtInput): Etappe[] {
   const { fahrzeug, datum, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte, dienstlich } = input
   const roundTripKm = kmStandEnde - lastKmStand
-  const kmHinIst = Math.round(roundTripKm / 2)
-  const kmRueckIst = roundTripKm - kmHinIst
+  // Hin- und Rückfahrt sollen im Export immer dieselbe Strecke ausweisen; bei ungerader
+  // Gesamtstrecke wird die halbierte Strecke aufgerundet (35 km -> 18 km je Richtung).
+  const kmEinwegIst = Math.ceil(roundTripKm / 2)
+  const kmHinIst = kmEinwegIst
+  const kmRueckIst = kmEinwegIst
 
   // km/Fahrzeit aus Ziel/Ziel-und-Zweck übernehmen, aber nur wenn dort tatsächlich ein Wert
   // (>0) hinterlegt ist – sonst die Ist-Werte aus der Eingabe verwenden statt mit 0 zu überschreiben.
