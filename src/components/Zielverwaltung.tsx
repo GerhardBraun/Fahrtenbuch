@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { newId } from '../logic'
+import { newId, synchronisiereWerte } from '../logic'
 import type { Ziel, ZielZweck } from '../types'
 
 interface Props {
@@ -31,9 +31,19 @@ export default function Zielverwaltung({ ziele, zieleZweck, onZieleChange, onZie
       </div>
 
       {subTab === 'ziele' ? (
-        <ZieleListe ziele={ziele} onChange={onZieleChange} />
+        <ZieleListe
+          ziele={ziele}
+          zieleZweck={zieleZweck}
+          onZieleChange={onZieleChange}
+          onZieleZweckChange={onZieleZweckChange}
+        />
       ) : (
-        <ZielZweckListe zieleZweck={zieleZweck} onChange={onZieleZweckChange} />
+        <ZielZweckListe
+          ziele={ziele}
+          zieleZweck={zieleZweck}
+          onZieleChange={onZieleChange}
+          onZieleZweckChange={onZieleZweckChange}
+        />
       )}
     </div>
   )
@@ -43,7 +53,17 @@ function enthaelt(text: string, query: string): boolean {
   return text.toLowerCase().includes(query.trim().toLowerCase())
 }
 
-function ZieleListe({ ziele, onChange }: { ziele: Ziel[]; onChange: (ziele: Ziel[]) => Promise<void> }) {
+function ZieleListe({
+  ziele,
+  zieleZweck,
+  onZieleChange,
+  onZieleZweckChange,
+}: {
+  ziele: Ziel[]
+  zieleZweck: ZielZweck[]
+  onZieleChange: (ziele: Ziel[]) => Promise<void>
+  onZieleZweckChange: (zieleZweck: ZielZweck[]) => Promise<void>
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [ort, setOrt] = useState('')
   const [strasse, setStrasse] = useState('')
@@ -74,22 +94,30 @@ function ZieleListe({ ziele, onChange }: { ziele: Ziel[]; onChange: (ziele: Ziel
 
   async function speichern() {
     if (!ort.trim()) return
+    const ortTrim = ort.trim()
+    const strasseTrim = strasse.trim()
     const werte = {
       Rad: { km: Number(radKm) || 0, dauerMin: Number(radMin) || 0 },
       Auto: { km: Number(autoKm) || 0, dauerMin: Number(autoMin) || 0 },
     }
+
+    let aktuelleZiele: Ziel[]
     if (selectedId) {
-      await onChange(ziele.map((z) => (z.id === selectedId ? { ...z, ort: ort.trim(), strasse: strasse.trim(), werte } : z)))
+      aktuelleZiele = ziele.map((z) => (z.id === selectedId ? { ...z, ort: ortTrim, strasse: strasseTrim, werte } : z))
     } else {
-      const neues: Ziel = { id: newId('z-'), ort: ort.trim(), strasse: strasse.trim(), werte }
-      await onChange([...ziele, neues])
+      const neues: Ziel = { id: newId('z-'), ort: ortTrim, strasse: strasseTrim, werte }
+      aktuelleZiele = [...ziele, neues]
       setSelectedId(neues.id)
     }
+
+    const synchronisiert = synchronisiereWerte(ortTrim, strasseTrim, werte, aktuelleZiele, zieleZweck)
+    await onZieleChange(synchronisiert.ziele)
+    await onZieleZweckChange(synchronisiert.zieleZweck)
   }
 
   async function loeschen() {
     if (!selectedId) return
-    await onChange(ziele.filter((z) => z.id !== selectedId))
+    await onZieleChange(ziele.filter((z) => z.id !== selectedId))
     neu()
   }
 
@@ -155,11 +183,15 @@ function ZieleListe({ ziele, onChange }: { ziele: Ziel[]; onChange: (ziele: Ziel
 }
 
 function ZielZweckListe({
+  ziele,
   zieleZweck,
-  onChange,
+  onZieleChange,
+  onZieleZweckChange,
 }: {
+  ziele: Ziel[]
   zieleZweck: ZielZweck[]
-  onChange: (zieleZweck: ZielZweck[]) => Promise<void>
+  onZieleChange: (ziele: Ziel[]) => Promise<void>
+  onZieleZweckChange: (zieleZweck: ZielZweck[]) => Promise<void>
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [ort, setOrt] = useState('')
@@ -194,26 +226,32 @@ function ZielZweckListe({
 
   async function speichern() {
     if (!ort.trim() || !zweck.trim()) return
+    const ortTrim = ort.trim()
+    const strasseTrim = strasse.trim()
     const werte = {
       Rad: { km: Number(radKm) || 0, dauerMin: Number(radMin) || 0 },
       Auto: { km: Number(autoKm) || 0, dauerMin: Number(autoMin) || 0 },
     }
+
+    let aktuelleZielZweck: ZielZweck[]
     if (selectedId) {
-      await onChange(
-        zieleZweck.map((z) =>
-          z.id === selectedId ? { ...z, ort: ort.trim(), strasse: strasse.trim(), zweck: zweck.trim(), werte } : z,
-        ),
+      aktuelleZielZweck = zieleZweck.map((z) =>
+        z.id === selectedId ? { ...z, ort: ortTrim, strasse: strasseTrim, zweck: zweck.trim(), werte } : z,
       )
     } else {
-      const neues: ZielZweck = { id: newId('zz-'), ort: ort.trim(), strasse: strasse.trim(), zweck: zweck.trim(), werte }
-      await onChange([...zieleZweck, neues])
+      const neues: ZielZweck = { id: newId('zz-'), ort: ortTrim, strasse: strasseTrim, zweck: zweck.trim(), werte }
+      aktuelleZielZweck = [...zieleZweck, neues]
       setSelectedId(neues.id)
     }
+
+    const synchronisiert = synchronisiereWerte(ortTrim, strasseTrim, werte, ziele, aktuelleZielZweck)
+    await onZieleChange(synchronisiert.ziele)
+    await onZieleZweckChange(synchronisiert.zieleZweck)
   }
 
   async function loeschen() {
     if (!selectedId) return
-    await onChange(zieleZweck.filter((z) => z.id !== selectedId))
+    await onZieleZweckChange(zieleZweck.filter((z) => z.id !== selectedId))
     neu()
   }
 

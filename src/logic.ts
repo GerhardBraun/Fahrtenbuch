@@ -1,5 +1,5 @@
 import { addMinutes, subMinutes } from './timeUtils'
-import type { Etappe, FahrzeugId, FahrzeugWerte, Historie, Ziel, ZielZweck } from './types'
+import type { Etappe, FahrzeugId, FahrzeugWerte, Historie, Ziel, ZielWerte, ZielZweck } from './types'
 import { ZUHAUSE } from './types'
 
 /**
@@ -59,8 +59,27 @@ export function resolveKmEingabe(eingabe: string, lastKmStand: number): number {
   return n
 }
 
-function gleich(a: string, b: string): boolean {
+export function gleich(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase()
+}
+
+/**
+ * Übernimmt km/Fahrzeit-Werte bei allen Ziel- und Ziel-und-Zweck-Einträgen mit demselben
+ * Ort+Straße (unabhängig vom Zweck), z.B. wenn bei "Fritzlar, Dom: Hl. Messe" Werte
+ * eingetragen werden, gelten sie auch für "Fritzlar, Dom" und "Fritzlar, Dom: Gebetskreis".
+ */
+export function synchronisiereWerte(
+  ort: string,
+  strasse: string,
+  werte: ZielWerte,
+  ziele: Ziel[],
+  zieleZweck: ZielZweck[],
+): { ziele: Ziel[]; zieleZweck: ZielZweck[] } {
+  const passt = (o: string, s: string) => gleich(o, ort) && gleich(s, strasse)
+  return {
+    ziele: ziele.map((z) => (passt(z.ort, z.strasse) ? { ...z, werte } : z)),
+    zieleZweck: zieleZweck.map((z) => (passt(z.ort, z.strasse) ? { ...z, werte } : z)),
+  }
 }
 
 export function findZiel(ziele: Ziel[], ort: string, strasse: string): Ziel | undefined {
