@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   computeEinzelfahrt,
   computeEtappe,
@@ -12,7 +12,7 @@ import {
   zielText,
 } from '../logic'
 import { ortVorschlaege, strasseVorschlaege, zweckVorschlaege, type Vorschlag } from '../suggestions'
-import { nowTime, today } from '../timeUtils'
+import { addMinutes, nowTime, subMinutes, today } from '../timeUtils'
 import type { Etappe, FahrzeugId, Historie, KmStaende, Ziel, ZielZweck } from '../types'
 import { leereZielWerte, ZUHAUSE } from '../types'
 import Autocomplete from './Autocomplete'
@@ -66,13 +66,25 @@ export default function FahrtForm({
   const start = standort ? standort.ziel : ZUHAUSE
   const lastKmStand = kmStaende[fahrzeug]
   const kmVorschau = kmStandEnde.trim() ? resolveKmEingabe(kmStandEnde, lastKmStand) : null
+  const effektivZurueck = modus === 'etappe' && !!standort && zurueck
 
-  useEffect(() => {
-    if (modus === 'etappe') {
-      setAbfahrt(standort ? standort.ankunft : '')
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fahrzeug, modus])
+  function berechneDauerMin(): number {
+    const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
+    if (Number.isNaN(kmEnde)) return NaN
+    const werte = effektivZurueck ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
+    const strecke = werte && werte.km > 0 ? werte.km : kmEnde - lastKmStand
+    return werte && werte.dauerMin > 0 ? werte.dauerMin : estimateDauerMin(fahrzeug, strecke)
+  }
+
+  const dauerVorschau = modus === 'etappe' && kmStandEnde.trim() ? berechneDauerMin() : NaN
+  const ankunftVorschau =
+    modus === 'etappe' && !standort && abfahrt && !Number.isNaN(dauerVorschau)
+      ? addMinutes(abfahrt, dauerVorschau)
+      : null
+  const abfahrtVorschau =
+    modus === 'etappe' && standort && ankunft && !Number.isNaN(dauerVorschau)
+      ? subMinutes(ankunft, dauerVorschau)
+      : null
 
   function anwenden(v: Vorschlag) {
     if (v.ort !== undefined) setOrt(v.ort)
@@ -125,10 +137,11 @@ export default function FahrtForm({
       resetForm()
       setMeldung('Fahrt gespeichert.')
     } else {
-      const ziel = zurueck ? ZUHAUSE : zielText(ort, strasse)
-      const zweckText = zurueck ? 'Rückfahrt' : zweck.trim()
+      const ziel = effektivZurueck ? ZUHAUSE : zielText(ort, strasse)
+      const zweckText = effektivZurueck ? 'Rückfahrt' : zweck.trim()
+      const zeitFeld = standort ? ankunft : abfahrt
 
-      if (!ziel || !zweckText || !abfahrt || !ankunft || !kmStandEnde) {
+      if (!ziel || !zweckText || !zeitFeld || !kmStandEnde) {
         setMeldung('Bitte alle Felder ausfüllen.')
         return
       }
@@ -136,15 +149,15 @@ export default function FahrtForm({
         setMeldung(`km-Stand muss größer als der letzte Stand (${lastKmStand}) sein.`)
         return
       }
-      const werte = zurueck ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
+      const werte = effektivZurueck ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
       const neue = computeEtappe({
         fahrzeug,
         datum,
         start,
         ziel,
         zweck: zweckText,
-        abfahrt,
-        ankunft,
+        abfahrt: standort ? undefined : abfahrt,
+        ankunft: standort ? ankunft : undefined,
         kmStandEnde: kmEnde,
         lastKmStand,
         werte,
@@ -152,7 +165,7 @@ export default function FahrtForm({
       })
       await onSave([neue])
       resetForm()
-      setMeldung(zurueck ? 'Rückfahrt gespeichert.' : 'Etappe gespeichert.')
+      setMeldung(effektivZurueck ? 'Rückfahrt gespeichert.' : 'Etappe gespeichert.')
     }
   }
 
@@ -198,7 +211,7 @@ export default function FahrtForm({
     setMeldung('Als Ziel und Zweck gespeichert.')
   }
 
-  const zielfelderAusblenden = modus === 'etappe' && zurueck
+  const zielfelderAusblenden = effektivZurueck
 
   return (
     <div className="form">
@@ -235,7 +248,7 @@ export default function FahrtForm({
         </div>
       </div>
 
-      {modus === 'etappe' && (
+      {modus === 'etappe' && standort && (
         <>
           <p className="info">
             Start: <strong>{start}</strong>
@@ -298,16 +311,33 @@ export default function FahrtForm({
         <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
       </label>
 
-      <div className="zeit-zeile">
-        <label>
-          Abfahrtszeit
-          <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
-        </label>
-        <label>
-          Ankunftszeit
-          <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
-        </label>
-      </div>
+      {modus === 'einzel' && (
+        <div className="zeit-zeile">
+          <label>
+            Abfahrtszeit
+            <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
+          </label>
+          <label>
+            Ankunftszeit
+            <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
+          </label>
+        </div>
+      )}
+
+      {modus === 'etappe' &&
+        (standort ? (
+          <label>
+            Ankunftszeit
+            <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
+            {abfahrtVorschau && <span className="km-vorschau">Abfahrt (berechnet): {abfahrtVorschau}</span>}
+          </label>
+        ) : (
+          <label>
+            Abfahrtszeit
+            <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
+            {ankunftVorschau && <span className="km-vorschau">Ankunft (berechnet): {ankunftVorschau}</span>}
+          </label>
+        ))}
 
       <label>
         km-Stand (nach der Fahrt)

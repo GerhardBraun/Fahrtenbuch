@@ -221,8 +221,10 @@ interface EtappeInput {
   start: string
   ziel: string
   zweck: string
-  abfahrt: string
-  ankunft: string
+  /** Erste Etappe (Start zu Hause): Abfahrt eingetragen, Ankunft wird errechnet. */
+  abfahrt?: string
+  /** Weitere Etappen/Rückfahrt: Ankunft eingetragen, Abfahrt wird errechnet. */
+  ankunft?: string
   kmStandEnde: number
   lastKmStand: number
   werte?: FahrzeugWerte
@@ -233,7 +235,10 @@ export function computeEtappe(input: EtappeInput): Etappe {
   const { fahrzeug, datum, start, ziel, zweck, abfahrt, ankunft, kmStandEnde, lastKmStand, werte, dienstlich } = input
 
   const strecke = werte && werte.km > 0 ? werte.km : kmStandEnde - lastKmStand
-  const ankunftEndgueltig = werte && werte.dauerMin > 0 ? addMinutes(abfahrt, werte.dauerMin) : ankunft
+  const dauerMin = werte && werte.dauerMin > 0 ? werte.dauerMin : estimateDauerMin(fahrzeug, strecke)
+
+  const abfahrtEndgueltig = abfahrt ?? subMinutes(ankunft!, dauerMin)
+  const ankunftEndgueltig = ankunft ?? addMinutes(abfahrt!, dauerMin)
 
   return {
     id: newId(),
@@ -242,7 +247,7 @@ export function computeEtappe(input: EtappeInput): Etappe {
     start,
     ziel,
     zweck,
-    abfahrt,
+    abfahrt: abfahrtEndgueltig,
     ankunft: ankunftEndgueltig,
     kmStand: lastKmStand + strecke,
     strecke,
