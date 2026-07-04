@@ -17,7 +17,7 @@ import { addMinutes, nowTime, subMinutes, today } from '../timeUtils'
 import type { Etappe, FahrzeugId, Historie, KmStaende, RohdatenEintrag, Ziel, ZielZweck } from '../types'
 import { leereZielWerte, ZUHAUSE } from '../types'
 import Autocomplete from './Autocomplete'
-import { AutoIcon, RadIcon } from './Icons'
+import { AutoIcon, RadIcon, SaveIcon } from './Icons'
 
 interface Props {
   ziele: Ziel[]
@@ -286,15 +286,17 @@ export default function FahrtForm({
         </div>
       </div>
 
-      {modus === 'etappe' && standort && (
+      {modus === 'etappe' && (
         <>
           <p className="info">
             Start: <strong>{start}</strong>
           </p>
-          <label className="checkbox">
-            <input type="checkbox" checked={zurueck} onChange={(e) => setZurueck(e.target.checked)} />
-            Zurück nach Hause
-          </label>
+          {standort && (
+            <label className="checkbox">
+              <input type="checkbox" checked={zurueck} onChange={(e) => setZurueck(e.target.checked)} />
+              Zurück nach Hause
+            </label>
+          )}
         </>
       )}
 
@@ -334,11 +336,11 @@ export default function FahrtForm({
           </label>
 
           <div className="segmented">
-            <button type="button" onClick={handleAlsZiel}>
-              Als Ziel speichern
+            <button type="button" className="icon-label" onClick={handleAlsZiel}>
+              <SaveIcon /> Ziel
             </button>
-            <button type="button" onClick={handleAlsZielUndZweck}>
-              Als Ziel und Zweck speichern
+            <button type="button" className="icon-label" onClick={handleAlsZielUndZweck}>
+              <SaveIcon /> Ziel und Zweck
             </button>
           </div>
         </>

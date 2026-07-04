@@ -99,6 +99,13 @@ textarea::placeholder {
   border-color: #3b82f6;
 }
 
+.icon-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
 .modus-zeile {
   display: flex;
   justify-content: space-between;
@@ -158,6 +165,11 @@ textarea::placeholder {
 
 .zeit-zeile label {
   flex: 1;
+  min-width: 0;
+}
+
+.zeit-zeile input {
+  width: 100%;
   min-width: 0;
 }
 
@@ -279,6 +291,11 @@ button.primary {
 
 .werte-zeile label {
   flex: 1;
+  min-width: 0;
+}
+
+.werte-zeile input {
+  width: 100%;
   min-width: 0;
 }
 

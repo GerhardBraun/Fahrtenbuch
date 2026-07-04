@@ -26,3 +26,17 @@ export function AutoIcon() {
     </svg>
   )
 }
+
+export function SaveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+      <path
+        d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M8 3v6h8V3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 21v-8h10v8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
