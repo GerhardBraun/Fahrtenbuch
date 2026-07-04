@@ -13,6 +13,34 @@ function formatDatum(datum: string): string {
   return `${t}.${m}.${j}`
 }
 
+function nachweisZeilen(liste: Etappe[]): string[] {
+  return liste.map((e) =>
+    [formatDatum(e.datum), e.abfahrt, e.ankunft, e.start, e.ziel, e.zweck, String(e.strecke)].join('\t'),
+  )
+}
+
+function mitKopf(zeilen: string[], kopfzeile: boolean, kopf: string[]): string {
+  const z = [...zeilen]
+  if (kopfzeile) z.unshift(kopf.join('\t'))
+  return z.join('\n')
+}
+
+const NACHWEIS_KOPF = ['Datum', 'Abfahrt', 'Ankunft', 'Start', 'Ziel', 'Anlass/Zweck', 'Strecke']
+const ROHDATEN_KOPF = [
+  'ID',
+  'Datum',
+  'Fahrzeug',
+  'Start',
+  'Ziel',
+  'Anlass/Zweck',
+  'Abfahrt',
+  'Ankunft',
+  'km-Stand',
+  'Strecke',
+  'Art',
+  'Exportiert',
+]
+
 export default function ExportView({ etappen, onChange }: Props) {
   const [modus, setModus] = useState<Modus>('nachweis')
   const [von, setVon] = useState('')
@@ -21,7 +49,7 @@ export default function ExportView({ etappen, onChange }: Props) {
   const [kopfzeile, setKopfzeile] = useState(false)
   const [meldung, setMeldung] = useState('')
 
-  const gefiltert = useMemo(() => {
+  const gefiltertBasis = useMemo(() => {
     return etappen
       .filter((e) => modus === 'rohdaten' || e.dienstlich)
       .filter((e) => (von ? e.datum >= von : true))
@@ -30,54 +58,42 @@ export default function ExportView({ etappen, onChange }: Props) {
       .sort((a, b) => (a.datum + a.abfahrt).localeCompare(b.datum + b.abfahrt))
   }, [etappen, von, bis, nurNichtExportiert, modus])
 
-  const text = useMemo(() => {
-    if (modus === 'rohdaten') {
-      const zeilen = gefiltert.map((e) =>
-        [
-          e.id,
-          formatDatum(e.datum),
-          e.fahrzeug,
-          e.start,
-          e.ziel,
-          e.zweck,
-          e.abfahrt,
-          e.ankunft,
-          String(e.kmStand),
-          String(e.strecke),
-          e.dienstlich ? 'dienstlich' : 'privat',
-          e.exportiert ? 'ja' : 'nein',
-        ].join('\t'),
-      )
-      if (kopfzeile) {
-        zeilen.unshift(
-          ['ID', 'Datum', 'Fahrzeug', 'Start', 'Ziel', 'Anlass/Zweck', 'Abfahrt', 'Ankunft', 'km-Stand', 'Strecke', 'Art', 'Exportiert'].join(
-            '\t',
-          ),
-        )
-      }
-      return zeilen.join('\n')
-    }
+  const radListe = useMemo(() => gefiltertBasis.filter((e) => e.fahrzeug === 'Rad'), [gefiltertBasis])
+  const autoListe = useMemo(() => gefiltertBasis.filter((e) => e.fahrzeug === 'Auto'), [gefiltertBasis])
+  const radText = useMemo(() => mitKopf(nachweisZeilen(radListe), kopfzeile, NACHWEIS_KOPF), [radListe, kopfzeile])
+  const autoText = useMemo(() => mitKopf(nachweisZeilen(autoListe), kopfzeile, NACHWEIS_KOPF), [autoListe, kopfzeile])
 
-    const zeilen = gefiltert.map((e) =>
-      [formatDatum(e.datum), e.abfahrt, e.ankunft, e.start, e.ziel, e.zweck, String(e.strecke)].join('\t'),
+  const rohdatenText = useMemo(() => {
+    const zeilen = gefiltertBasis.map((e) =>
+      [
+        e.id,
+        formatDatum(e.datum),
+        e.fahrzeug,
+        e.start,
+        e.ziel,
+        e.zweck,
+        e.abfahrt,
+        e.ankunft,
+        String(e.kmStand),
+        String(e.strecke),
+        e.dienstlich ? 'dienstlich' : 'privat',
+        e.exportiert ? 'ja' : 'nein',
+      ].join('\t'),
     )
-    if (kopfzeile) {
-      zeilen.unshift(['Datum', 'Abfahrt', 'Ankunft', 'Start', 'Ziel', 'Anlass/Zweck', 'Strecke'].join('\t'))
-    }
-    return zeilen.join('\n')
-  }, [gefiltert, kopfzeile, modus])
+    return mitKopf(zeilen, kopfzeile, ROHDATEN_KOPF)
+  }, [gefiltertBasis, kopfzeile])
 
-  async function handleCopy() {
+  async function handleCopy(t: string) {
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(t)
       setMeldung('In die Zwischenablage kopiert.')
     } catch {
       setMeldung('Kopieren nicht möglich – bitte Text manuell markieren.')
     }
   }
 
-  async function handleMarkExportiert() {
-    const ids = new Set(gefiltert.map((e) => e.id))
+  async function handleMarkExportiert(liste: Etappe[]) {
+    const ids = new Set(liste.map((e) => e.id))
     await onChange(etappen.map((e) => (ids.has(e.id) ? { ...e, exportiert: true } : e)))
     setMeldung('Als exportiert markiert.')
   }
@@ -104,7 +120,7 @@ export default function ExportView({ etappen, onChange }: Props) {
       </div>
 
       {modus === 'nachweis' ? (
-        <p className="hinweis">Private Fahrten werden nicht mit exportiert.</p>
+        <p className="hinweis">Private Fahrten werden nicht mit exportiert, getrennt nach Fahrzeug.</p>
       ) : (
         <p className="hinweis">Alle Fahrten (dienstlich und privat) mit allen Feldern, z.B. zur Sicherung in Excel.</p>
       )}
@@ -132,18 +148,38 @@ export default function ExportView({ etappen, onChange }: Props) {
         Kopfzeile einschließen
       </label>
 
-      <p className="hinweis">{gefiltert.length} Zeile(n)</p>
-
-      <textarea className="export-text" readOnly value={text} rows={12} />
-
-      <button type="button" className="primary" onClick={handleCopy}>
-        In Zwischenablage kopieren
-      </button>
-      {modus === 'nachweis' && (
+      {modus === 'rohdaten' ? (
         <>
-          <button type="button" onClick={handleMarkExportiert} disabled={gefiltert.length === 0}>
-            Als exportiert markieren
+          <p className="hinweis">{gefiltertBasis.length} Zeile(n)</p>
+          <textarea className="export-text" readOnly value={rohdatenText} rows={12} />
+          <button type="button" className="primary" onClick={() => handleCopy(rohdatenText)}>
+            In Zwischenablage kopieren
           </button>
+        </>
+      ) : (
+        <>
+          <h3>Rad ({radListe.length})</h3>
+          <textarea className="export-text" readOnly value={radText} rows={8} />
+          <div className="segmented">
+            <button type="button" className="primary" onClick={() => handleCopy(radText)}>
+              Kopieren
+            </button>
+            <button type="button" onClick={() => handleMarkExportiert(radListe)} disabled={radListe.length === 0}>
+              Als exportiert markieren
+            </button>
+          </div>
+
+          <h3>Auto ({autoListe.length})</h3>
+          <textarea className="export-text" readOnly value={autoText} rows={8} />
+          <div className="segmented">
+            <button type="button" className="primary" onClick={() => handleCopy(autoText)}>
+              Kopieren
+            </button>
+            <button type="button" onClick={() => handleMarkExportiert(autoListe)} disabled={autoListe.length === 0}>
+              Als exportiert markieren
+            </button>
+          </div>
+
           <button type="button" onClick={handleDeleteExportiert} disabled={anzahlExportiert === 0}>
             Exportierte löschen ({anzahlExportiert})
           </button>
