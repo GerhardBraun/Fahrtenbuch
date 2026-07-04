@@ -278,10 +278,36 @@ button.primary {
 }
 
 .ziel-liste li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
   padding: 0.35rem 0.7rem;
   font-size: 0.85rem;
   border-bottom: 1px solid #2a2a2a;
   cursor: pointer;
+}
+
+.ziel-liste-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ziel-liste-werte {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  color: #999;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ziel-liste-werte span {
+  width: 2rem;
+  text-align: right;
 }
 
 .werte-zeile {

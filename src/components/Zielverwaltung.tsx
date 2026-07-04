@@ -168,12 +168,14 @@ function ZieleListe({
 
       <ul className="ziel-liste">
         {gefiltert.map((z) => (
-          <li
-            key={z.id}
-            className={z.id === selectedId ? 'selected' : ''}
-            onClick={() => laden(z)}
-          >
-            {z.strasse ? `${z.ort}, ${z.strasse}` : z.ort}
+          <li key={z.id} className={z.id === selectedId ? 'selected' : ''} onClick={() => laden(z)}>
+            <span className="ziel-liste-text">{z.strasse ? `${z.ort}, ${z.strasse}` : z.ort}</span>
+            <span className="ziel-liste-werte">
+              <span>{z.werte.Rad.km}</span>
+              <span>{z.werte.Rad.dauerMin}</span>
+              <span>{z.werte.Auto.km}</span>
+              <span>{z.werte.Auto.dauerMin}</span>
+            </span>
           </li>
         ))}
         {gefiltert.length === 0 && <li className="hinweis">Keine Treffer</li>}
@@ -311,12 +313,16 @@ function ZielZweckListe({
 
       <ul className="ziel-liste">
         {gefiltert.map((z) => (
-          <li
-            key={z.id}
-            className={z.id === selectedId ? 'selected' : ''}
-            onClick={() => laden(z)}
-          >
-            {z.strasse ? `${z.ort}, ${z.strasse}: ${z.zweck}` : `${z.ort}: ${z.zweck}`}
+          <li key={z.id} className={z.id === selectedId ? 'selected' : ''} onClick={() => laden(z)}>
+            <span className="ziel-liste-text">
+              {z.strasse ? `${z.ort}, ${z.strasse}: ${z.zweck}` : `${z.ort}: ${z.zweck}`}
+            </span>
+            <span className="ziel-liste-werte">
+              <span>{z.werte.Rad.km}</span>
+              <span>{z.werte.Rad.dauerMin}</span>
+              <span>{z.werte.Auto.km}</span>
+              <span>{z.werte.Auto.dauerMin}</span>
+            </span>
           </li>
         ))}
         {gefiltert.length === 0 && <li className="hinweis">Keine Treffer</li>}
