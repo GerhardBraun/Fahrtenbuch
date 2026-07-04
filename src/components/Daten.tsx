@@ -1,19 +1,32 @@
 import { useMemo, useState } from 'react'
 import { mergeHistorien, mergeZieleListen, mergeZielZweckListen } from '../logic'
-import type { Historie, Ziel, ZielZweck } from '../types'
+import type { Historie, KmStaende, Ziel, ZielZweck } from '../types'
 
 interface Props {
   historie: Historie
   ziele: Ziel[]
   zieleZweck: ZielZweck[]
+  kmStaende: KmStaende
   onHistorieChange: (historie: Historie) => Promise<void>
   onZieleChange: (ziele: Ziel[]) => Promise<void>
   onZieleZweckChange: (zieleZweck: ZielZweck[]) => Promise<void>
+  onKmStaendeChange: (kmStaende: KmStaende) => Promise<void>
 }
 
-export default function Daten({ historie, ziele, zieleZweck, onHistorieChange, onZieleChange, onZieleZweckChange }: Props) {
+export default function Daten({
+  historie,
+  ziele,
+  zieleZweck,
+  kmStaende,
+  onHistorieChange,
+  onZieleChange,
+  onZieleZweckChange,
+  onKmStaendeChange,
+}: Props) {
   const [importText, setImportText] = useState('')
   const [meldung, setMeldung] = useState('')
+  const [radKm, setRadKm] = useState(String(kmStaende.Rad))
+  const [autoKm, setAutoKm] = useState(String(kmStaende.Auto))
 
   const exportText = useMemo(
     () => JSON.stringify({ historie, ziele, zieleZweck }, null, 2),
@@ -63,6 +76,16 @@ export default function Daten({ historie, ziele, zieleZweck, onHistorieChange, o
     )
   }
 
+  async function handleKmStaendeSpeichern() {
+    setMeldung('')
+    const neueWerte: KmStaende = {
+      Rad: Number(radKm) || 0,
+      Auto: Number(autoKm) || 0,
+    }
+    await onKmStaendeChange(neueWerte)
+    setMeldung('km-Stände gespeichert.')
+  }
+
   return (
     <div className="form">
       <h2>Daten übertragen</h2>
@@ -70,6 +93,22 @@ export default function Daten({ historie, ziele, zieleZweck, onHistorieChange, o
         Zum Austausch der Listen (Ort/Straße/Zweck-Verlauf, Ziele, Ziel und Zweck) zwischen Geräten – z. B. vom PC
         aufs Smartphone. Fahrten selbst werden hier nicht übertragen.
       </p>
+
+      <h3>km-Stände</h3>
+      <p className="hinweis">Zuletzt erfasster km-Stand je Fahrzeug – hier korrigierbar (z.B. nach einem Test).</p>
+      <div className="werte-zeile">
+        <label>
+          Rad km
+          <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
+        </label>
+        <label>
+          Auto km
+          <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
+        </label>
+      </div>
+      <button type="button" className="primary" onClick={handleKmStaendeSpeichern}>
+        km-Stände speichern
+      </button>
 
       <h3>Export</h3>
       <textarea className="export-text" readOnly value={exportText} rows={8} />

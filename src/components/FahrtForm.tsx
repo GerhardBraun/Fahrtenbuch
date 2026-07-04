@@ -61,6 +61,7 @@ export default function FahrtForm({
   const [kmStandEnde, setKmStandEnde] = useState('')
   const [zurueck, setZurueck] = useState(false)
   const [meldung, setMeldung] = useState('')
+  const [speichertGerade, setSpeichertGerade] = useState(false)
 
   const standort = offenerStandort(etappen, fahrzeug)
   const start = standort ? standort.ziel : ZUHAUSE
@@ -108,6 +109,16 @@ export default function FahrtForm({
   }
 
   async function speichern(dienstlich: boolean) {
+    if (speichertGerade) return
+    setSpeichertGerade(true)
+    try {
+      await speichernInner(dienstlich)
+    } finally {
+      setSpeichertGerade(false)
+    }
+  }
+
+  async function speichernInner(dienstlich: boolean) {
     setMeldung('')
     const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
 
@@ -357,10 +368,10 @@ export default function FahrtForm({
       {meldung && <p className="meldung">{meldung}</p>}
 
       <div className="segmented">
-        <button type="button" className="primary" onClick={() => speichern(true)}>
+        <button type="button" className="primary" onClick={() => speichern(true)} disabled={speichertGerade}>
           Als dienstl. speichern
         </button>
-        <button type="button" onClick={() => speichern(false)}>
+        <button type="button" onClick={() => speichern(false)} disabled={speichertGerade}>
           Als privat speichern
         </button>
       </div>

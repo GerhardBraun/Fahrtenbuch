@@ -55,35 +55,45 @@ export default function App() {
     })()
   }, [])
 
+  // Aktuellen Stand immer frisch aus IndexedDB lesen statt aus dem React-State zu übernehmen:
+  // Wenn zwei Speichervorgänge kurz hintereinander passieren, kann der React-State beim zweiten
+  // Aufruf noch veraltet sein (Closure zur Renderzeit) und würde den ersten sonst überschreiben.
   async function addEtappen(neue: Etappe[]) {
-    const updated = [...etappen, ...neue]
-    setEtappen(updated)
+    const aktuelleEtappen = await loadEtappen()
+    const updated = [...aktuelleEtappen, ...neue]
     await saveEtappen(updated)
+    setEtappen(updated)
 
     const letzte = neue[neue.length - 1]
-    const updatedKm = { ...kmStaende, [letzte.fahrzeug]: letzte.kmStand }
-    setKmStaende(updatedKm)
+    const aktuelleKmStaende = await loadKmStaende()
+    const updatedKm = { ...aktuelleKmStaende, [letzte.fahrzeug]: letzte.kmStand }
     await saveKmStaende(updatedKm)
+    setKmStaende(updatedKm)
   }
 
   async function updateEtappen(updated: Etappe[]) {
-    setEtappen(updated)
     await saveEtappen(updated)
+    setEtappen(updated)
   }
 
   async function updateZiele(updated: Ziel[]) {
-    setZiele(updated)
     await saveZiele(updated)
+    setZiele(updated)
   }
 
   async function updateZieleZweck(updated: ZielZweck[]) {
-    setZieleZweck(updated)
     await saveZieleZweck(updated)
+    setZieleZweck(updated)
   }
 
   async function updateHistorie(updated: Historie) {
-    setHistorie(updated)
     await saveHistorie(updated)
+    setHistorie(updated)
+  }
+
+  async function updateKmStaende(updated: KmStaende) {
+    await saveKmStaende(updated)
+    setKmStaende(updated)
   }
 
   if (!loaded) {
@@ -121,9 +131,11 @@ export default function App() {
             historie={historie}
             ziele={ziele}
             zieleZweck={zieleZweck}
+            kmStaende={kmStaende}
             onHistorieChange={updateHistorie}
             onZieleChange={updateZiele}
             onZieleZweckChange={updateZieleZweck}
+            onKmStaendeChange={updateKmStaende}
           />
         )}
       </main>
