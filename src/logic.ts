@@ -3,15 +3,25 @@ import type { Etappe, FahrzeugId, FahrzeugWerte, Historie, Ziel, ZielZweck } fro
 import { ZUHAUSE } from './types'
 
 /**
- * Geschätzte Fahrzeit wie bisher in der Excel-Mappe:
- * Auto ~36 km/h (5 Min je angefangene 3 km), Rad ~20 km/h (3 Min/km, auf 5 Min gerundet).
+ * Auto: variable Durchschnittsgeschwindigkeit zwischen 28 km/h (Stadtverkehr, kurze Strecken)
+ * und 80 km/h (Landstraße/Autobahn, lange Strecken), Übergang als Sigmoid um 32 km herum.
+ * Herleitung/Formel vom Nutzer vorgegeben (Excel: MAX(5;VRUNDEN(60*km/geschwindigkeit(km);5))).
+ */
+function autoGeschwindigkeitKmH(km: number): number {
+  return 28 + 52 / (1 + Math.exp(-(km - 32) / 14.5))
+}
+
+/**
+ * Geschätzte Fahrzeit: Auto per Sigmoid-Geschwindigkeitsmodell, Rad konstant 20 km/h (3 Min/km).
+ * Beide auf 5-Minuten-Intervalle gerundet, mindestens 5 Minuten (auch bei 1 km).
  */
 export function estimateDauerMin(fahrzeug: FahrzeugId, km: number): number {
   if (km <= 0) return 0
   if (fahrzeug === 'Auto') {
-    return Math.floor((km + 1) / 3) * 5
+    const minuten = (60 * km) / autoGeschwindigkeitKmH(km)
+    return Math.max(5, Math.round(minuten / 5) * 5)
   }
-  return Math.round((km * 3) / 5) * 5
+  return Math.max(5, Math.round((km * 3) / 5) * 5)
 }
 
 let idCounter = 0
