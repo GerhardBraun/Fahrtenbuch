@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import type { Etappe } from '../types'
+import type { Etappe, RohdatenEintrag } from '../types'
 
 interface Props {
   etappen: Etappe[]
+  rohdaten: RohdatenEintrag[]
   onChange: (etappen: Etappe[]) => Promise<void>
 }
 
@@ -26,22 +27,9 @@ function mitKopf(zeilen: string[], kopfzeile: boolean, kopf: string[]): string {
 }
 
 const NACHWEIS_KOPF = ['Datum', 'Abfahrt', 'Ankunft', 'Start', 'Ziel', 'Anlass/Zweck', 'Strecke']
-const ROHDATEN_KOPF = [
-  'ID',
-  'Datum',
-  'Fahrzeug',
-  'Start',
-  'Ziel',
-  'Anlass/Zweck',
-  'Abfahrt',
-  'Ankunft',
-  'km-Stand',
-  'Strecke',
-  'Art',
-  'Exportiert',
-]
+const ROHDATEN_KOPF = ['Datum', 'Fahrzeug', 'Ziel', 'Anlass/Zweck', 'Abfahrt', 'Ankunft', 'km-Stand', 'Art']
 
-export default function ExportView({ etappen, onChange }: Props) {
+export default function ExportView({ etappen, rohdaten, onChange }: Props) {
   const [modus, setModus] = useState<Modus>('nachweis')
   const [von, setVon] = useState('')
   const [bis, setBis] = useState('')
@@ -49,39 +37,42 @@ export default function ExportView({ etappen, onChange }: Props) {
   const [kopfzeile, setKopfzeile] = useState(false)
   const [meldung, setMeldung] = useState('')
 
-  const gefiltertBasis = useMemo(() => {
+  const nachweisBasis = useMemo(() => {
     return etappen
-      .filter((e) => modus === 'rohdaten' || e.dienstlich)
+      .filter((e) => e.dienstlich)
       .filter((e) => (von ? e.datum >= von : true))
       .filter((e) => (bis ? e.datum <= bis : true))
-      .filter((e) => (modus === 'nachweis' && nurNichtExportiert ? !e.exportiert : true))
+      .filter((e) => (nurNichtExportiert ? !e.exportiert : true))
       .sort((a, b) => (a.datum + a.abfahrt).localeCompare(b.datum + b.abfahrt))
-  }, [etappen, von, bis, nurNichtExportiert, modus])
+  }, [etappen, von, bis, nurNichtExportiert])
 
-  const radListe = useMemo(() => gefiltertBasis.filter((e) => e.fahrzeug === 'Rad'), [gefiltertBasis])
-  const autoListe = useMemo(() => gefiltertBasis.filter((e) => e.fahrzeug === 'Auto'), [gefiltertBasis])
+  const radListe = useMemo(() => nachweisBasis.filter((e) => e.fahrzeug === 'Rad'), [nachweisBasis])
+  const autoListe = useMemo(() => nachweisBasis.filter((e) => e.fahrzeug === 'Auto'), [nachweisBasis])
   const radText = useMemo(() => mitKopf(nachweisZeilen(radListe), kopfzeile, NACHWEIS_KOPF), [radListe, kopfzeile])
   const autoText = useMemo(() => mitKopf(nachweisZeilen(autoListe), kopfzeile, NACHWEIS_KOPF), [autoListe, kopfzeile])
 
+  const rohdatenGefiltert = useMemo(() => {
+    return rohdaten
+      .filter((r) => (von ? r.datum >= von : true))
+      .filter((r) => (bis ? r.datum <= bis : true))
+      .sort((a, b) => (a.datum + a.abfahrt + a.ankunft).localeCompare(b.datum + b.abfahrt + b.ankunft))
+  }, [rohdaten, von, bis])
+
   const rohdatenText = useMemo(() => {
-    const zeilen = gefiltertBasis.map((e) =>
+    const zeilen = rohdatenGefiltert.map((r) =>
       [
-        e.id,
-        formatDatum(e.datum),
-        e.fahrzeug,
-        e.start,
-        e.ziel,
-        e.zweck,
-        e.abfahrt,
-        e.ankunft,
-        String(e.kmStand),
-        String(e.strecke),
-        e.dienstlich ? 'dienstlich' : 'privat',
-        e.exportiert ? 'ja' : 'nein',
+        formatDatum(r.datum),
+        r.fahrzeug,
+        r.ziel,
+        r.zweck,
+        r.abfahrt,
+        r.ankunft,
+        String(r.kmStandEnde),
+        r.dienstlich ? 'dienstlich' : 'privat',
       ].join('\t'),
     )
     return mitKopf(zeilen, kopfzeile, ROHDATEN_KOPF)
-  }, [gefiltertBasis, kopfzeile])
+  }, [rohdatenGefiltert, kopfzeile])
 
   async function handleCopy(t: string) {
     try {
@@ -122,7 +113,7 @@ export default function ExportView({ etappen, onChange }: Props) {
       {modus === 'nachweis' ? (
         <p className="hinweis">Private Fahrten werden nicht mit exportiert, getrennt nach Fahrzeug.</p>
       ) : (
-        <p className="hinweis">Alle Fahrten (dienstlich und privat) mit allen Feldern, z.B. zur Sicherung in Excel.</p>
+        <p className="hinweis">Genau die eingegebenen Rohdaten (dienstlich und privat), z.B. zur Sicherung in Excel.</p>
       )}
 
       <label>
@@ -150,7 +141,7 @@ export default function ExportView({ etappen, onChange }: Props) {
 
       {modus === 'rohdaten' ? (
         <>
-          <p className="hinweis">{gefiltertBasis.length} Zeile(n)</p>
+          <p className="hinweis">{rohdatenGefiltert.length} Zeile(n)</p>
           <textarea className="export-text" readOnly value={rohdatenText} rows={12} />
           <button type="button" className="primary" onClick={() => handleCopy(rohdatenText)}>
             In Zwischenablage kopieren

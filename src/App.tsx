@@ -8,15 +8,17 @@ import {
   loadEtappen,
   loadHistorie,
   loadKmStaende,
+  loadRohdaten,
   loadZiele,
   loadZieleZweck,
   saveEtappen,
   saveHistorie,
   saveKmStaende,
+  saveRohdaten,
   saveZiele,
   saveZieleZweck,
 } from './storage'
-import type { Etappe, Historie, KmStaende, Ziel, ZielZweck } from './types'
+import type { Etappe, Historie, KmStaende, RohdatenEintrag, Ziel, ZielZweck } from './types'
 
 type Tab = 'fahrt' | 'ziele' | 'verlauf' | 'export' | 'daten'
 
@@ -31,6 +33,7 @@ const TABS: { id: Tab; label: string }[] = [
 export default function App() {
   const [tab, setTab] = useState<Tab>('fahrt')
   const [etappen, setEtappen] = useState<Etappe[]>([])
+  const [rohdaten, setRohdaten] = useState<RohdatenEintrag[]>([])
   const [ziele, setZiele] = useState<Ziel[]>([])
   const [zieleZweck, setZieleZweck] = useState<ZielZweck[]>([])
   const [historie, setHistorie] = useState<Historie>({ orte: [], strassen: [], zwecke: [] })
@@ -39,14 +42,16 @@ export default function App() {
 
   useEffect(() => {
     ;(async () => {
-      const [e, z, zz, h, k] = await Promise.all([
+      const [e, r, z, zz, h, k] = await Promise.all([
         loadEtappen(),
+        loadRohdaten(),
         loadZiele(),
         loadZieleZweck(),
         loadHistorie(),
         loadKmStaende(),
       ])
       setEtappen(e)
+      setRohdaten(r)
       setZiele(z)
       setZieleZweck(zz)
       setHistorie(h)
@@ -69,6 +74,13 @@ export default function App() {
     const updatedKm = { ...aktuelleKmStaende, [letzte.fahrzeug]: letzte.kmStand }
     await saveKmStaende(updatedKm)
     setKmStaende(updatedKm)
+  }
+
+  async function addRohdatenEintrag(neu: RohdatenEintrag) {
+    const aktuelleRohdaten = await loadRohdaten()
+    const updated = [...aktuelleRohdaten, neu]
+    await saveRohdaten(updated)
+    setRohdaten(updated)
   }
 
   async function updateEtappen(updated: Etappe[]) {
@@ -111,6 +123,7 @@ export default function App() {
             kmStaende={kmStaende}
             etappen={etappen}
             onSave={addEtappen}
+            onSaveRohdaten={addRohdatenEintrag}
             onZieleChange={updateZiele}
             onZieleZweckChange={updateZieleZweck}
             onHistorieChange={updateHistorie}
@@ -125,7 +138,7 @@ export default function App() {
           />
         )}
         {tab === 'verlauf' && <Verlauf etappen={etappen} onChange={updateEtappen} />}
-        {tab === 'export' && <ExportView etappen={etappen} onChange={updateEtappen} />}
+        {tab === 'export' && <ExportView etappen={etappen} onChange={updateEtappen} rohdaten={rohdaten} />}
         {tab === 'daten' && (
           <Daten
             historie={historie}

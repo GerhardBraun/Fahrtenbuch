@@ -1,5 +1,5 @@
 import { addMinutes, subMinutes } from './timeUtils'
-import type { Etappe, FahrzeugId, FahrzeugWerte, Historie, Ziel, ZielWerte, ZielZweck } from './types'
+import type { Etappe, FahrzeugId, FahrzeugWerte, Historie, RohdatenEintrag, Ziel, ZielWerte, ZielZweck } from './types'
 import { ZUHAUSE } from './types'
 
 /**
@@ -253,5 +253,30 @@ export function computeEtappe(input: EtappeInput): Etappe {
     strecke,
     dienstlich,
     exportiert: false,
+  }
+}
+
+interface RohdatenInput {
+  fahrzeug: FahrzeugId
+  datum: string
+  ziel: string
+  zweck: string
+  abfahrt?: string
+  ankunft?: string
+  kmStandEnde: number
+  dienstlich: boolean
+}
+
+export function newRohdatenEintrag(input: RohdatenInput): RohdatenEintrag {
+  return {
+    id: newId('rd-'),
+    datum: input.datum,
+    fahrzeug: input.fahrzeug,
+    ziel: input.ziel,
+    zweck: input.zweck,
+    abfahrt: input.abfahrt ?? '',
+    ankunft: input.ankunft ?? '',
+    kmStandEnde: input.kmStandEnde,
+    dienstlich: input.dienstlich,
   }
 }

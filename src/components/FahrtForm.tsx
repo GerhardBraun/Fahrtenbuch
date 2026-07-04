@@ -8,12 +8,13 @@ import {
   findZielZweck,
   mitHistorieEintrag,
   newId,
+  newRohdatenEintrag,
   resolveKmEingabe,
   zielText,
 } from '../logic'
 import { ortVorschlaege, strasseVorschlaege, zweckVorschlaege, type Vorschlag } from '../suggestions'
 import { addMinutes, nowTime, subMinutes, today } from '../timeUtils'
-import type { Etappe, FahrzeugId, Historie, KmStaende, Ziel, ZielZweck } from '../types'
+import type { Etappe, FahrzeugId, Historie, KmStaende, RohdatenEintrag, Ziel, ZielZweck } from '../types'
 import { leereZielWerte, ZUHAUSE } from '../types'
 import Autocomplete from './Autocomplete'
 import { AutoIcon, RadIcon } from './Icons'
@@ -25,6 +26,7 @@ interface Props {
   kmStaende: KmStaende
   etappen: Etappe[]
   onSave: (etappen: Etappe[]) => Promise<void>
+  onSaveRohdaten: (eintrag: RohdatenEintrag) => Promise<void>
   onZieleChange: (ziele: Ziel[]) => Promise<void>
   onZieleZweckChange: (zieleZweck: ZielZweck[]) => Promise<void>
   onHistorieChange: (historie: Historie) => Promise<void>
@@ -46,6 +48,7 @@ export default function FahrtForm({
   kmStaende,
   etappen,
   onSave,
+  onSaveRohdaten,
   onZieleChange,
   onZieleZweckChange,
   onHistorieChange,
@@ -145,6 +148,18 @@ export default function FahrtForm({
         dienstlich,
       })
       await onSave(neue)
+      await onSaveRohdaten(
+        newRohdatenEintrag({
+          fahrzeug,
+          datum,
+          ziel: zielText(ort, strasse),
+          zweck: zweck.trim(),
+          abfahrt,
+          ankunft,
+          kmStandEnde: kmEnde,
+          dienstlich,
+        }),
+      )
       resetForm()
       setMeldung('Fahrt gespeichert.')
     } else {
@@ -175,6 +190,18 @@ export default function FahrtForm({
         dienstlich,
       })
       await onSave([neue])
+      await onSaveRohdaten(
+        newRohdatenEintrag({
+          fahrzeug,
+          datum,
+          ziel,
+          zweck: zweckText,
+          abfahrt: standort ? undefined : abfahrt,
+          ankunft: standort ? ankunft : undefined,
+          kmStandEnde: kmEnde,
+          dienstlich,
+        }),
+      )
       resetForm()
       setMeldung(effektivZurueck ? 'Rückfahrt gespeichert.' : 'Etappe gespeichert.')
     }

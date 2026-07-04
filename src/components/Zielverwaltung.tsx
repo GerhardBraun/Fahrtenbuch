@@ -162,7 +162,7 @@ function ZieleListe({
           Löschen
         </button>
         <button type="button" onClick={neu}>
-          Neu
+          Leeren
         </button>
       </div>
 
@@ -305,7 +305,7 @@ function ZielZweckListe({
           Löschen
         </button>
         <button type="button" onClick={neu}>
-          Neu
+          Leeren
         </button>
       </div>
 

@@ -57,6 +57,23 @@ export interface Etappe {
   exportiert: boolean
 }
 
+/**
+ * Exakt das, was beim Speichern einer Fahrt eingegeben wurde – unabhängig von der
+ * Berechnung der Etappen (Hin-/Rückfahrt-Aufteilung, Referenzwerte aus Zielen usw.).
+ * Ein Eintrag pro Speichervorgang (bei Einzelfahrt also einer für Hin+Rück zusammen).
+ */
+export interface RohdatenEintrag {
+  id: string
+  datum: string
+  fahrzeug: FahrzeugId
+  ziel: string
+  zweck: string
+  abfahrt: string // '' wenn nicht eingegeben (wurde errechnet)
+  ankunft: string // '' wenn nicht eingegeben (wurde errechnet)
+  kmStandEnde: number
+  dienstlich: boolean
+}
+
 export interface KmStaende {
   Rad: number
   Auto: number
