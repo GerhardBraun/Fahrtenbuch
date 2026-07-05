@@ -161,8 +161,12 @@ export default function Verlauf({ etappen, onChange }: Props) {
             </div>
             <div className="verlauf-zeile2">
               <span>{e.start}</span>
-              <span>→</span>
-              <span>{e.ziel}</span>
+              {e.ziel && (
+                <>
+                  <span>→</span>
+                  <span>{e.ziel}</span>
+                </>
+              )}
             </div>
             <div className="verlauf-zeile3">
               <span>{e.abfahrt}</span>

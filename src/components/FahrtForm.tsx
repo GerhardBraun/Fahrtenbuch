@@ -6,6 +6,7 @@ import {
   findWerte,
   findZiel,
   findZielZweck,
+  kombiniereOrtStrasse,
   mitHistorieEintrag,
   newId,
   newRohdatenEintrag,
@@ -126,14 +127,59 @@ export default function FahrtForm({
     const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
 
     if (modus === 'einzel') {
-      if (!ort.trim() || !zweck.trim() || !abfahrt || !ankunft || !kmStandEnde) {
+      if (!abfahrt || !ankunft || !kmStandEnde) {
         setMeldung('Bitte alle Felder ausfüllen.')
+        return
+      }
+      if (dienstlich && (!ort.trim() || !zweck.trim())) {
+        setMeldung('Bitte alle Felder ausfüllen.')
+        return
+      }
+      if (!dienstlich && !ort.trim() && !strasse.trim() && !zweck.trim()) {
+        setMeldung('Bitte mindestens Ort, Straße oder Zweck ausfüllen.')
         return
       }
       if (Number.isNaN(kmEnde) || kmEnde <= lastKmStand) {
         setMeldung(`km-Stand muss größer als der letzte Stand (${lastKmStand}) sein.`)
         return
       }
+
+      if (!dienstlich) {
+        // Private Einzelfahrt: eine Etappe ohne Hin-/Rück-Aufteilung und ohne Ziel-Konsistenzprüfung.
+        // Start übernimmt Ort/Straße aus der Eingabe (statt Zuhause), Ziel bleibt leer.
+        const einzelne: Etappe = {
+          id: newId(),
+          datum,
+          fahrzeug,
+          start: kombiniereOrtStrasse(ort, strasse),
+          ziel: '',
+          zweck: zweck.trim(),
+          abfahrt,
+          ankunft,
+          kmStand: kmEnde,
+          strecke: kmEnde - lastKmStand,
+          dienstlich: false,
+          exportiert: false,
+        }
+        await onSave([einzelne])
+        await onSaveRohdaten(
+          newRohdatenEintrag({
+            fahrzeug,
+            datum,
+            ort: ort.trim(),
+            strasse: strasse.trim(),
+            zweck: zweck.trim(),
+            abfahrt,
+            ankunft,
+            kmStandEnde: kmEnde,
+            dienstlich: false,
+          }),
+        )
+        resetForm()
+        setMeldung('Fahrt gespeichert.')
+        return
+      }
+
       const werte = findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
       const neue = computeEinzelfahrt({
         fahrzeug,
@@ -260,7 +306,7 @@ export default function FahrtForm({
       <div className="modus-zeile">
         <div className="modus-toggle">
           <button type="button" className={modus === 'einzel' ? 'active' : ''} onClick={() => wechsleModus('einzel')}>
-            Einzelfahrt
+            Hin- und Rückfahrt
           </button>
           <button type="button" className={modus === 'etappe' ? 'active' : ''} onClick={() => wechsleModus('etappe')}>
             Etappe

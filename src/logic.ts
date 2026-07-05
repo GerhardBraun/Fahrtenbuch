@@ -34,6 +34,14 @@ export function zielText(ort: string, strasse: string): string {
   return strasse.trim() ? `${ort.trim()}, ${strasse.trim()}` : ort.trim()
 }
 
+/** Wie zielText, aber ohne führendes Komma, wenn nur die Straße (ohne Ort) angegeben ist. */
+export function kombiniereOrtStrasse(ort: string, strasse: string): string {
+  const o = ort.trim()
+  const s = strasse.trim()
+  if (o && s) return `${o}, ${s}`
+  return o || s
+}
+
 /**
  * Vereinfachte km-Eingabe: 1-2 Ziffern = letzte zwei Stellen des km-Stands
  * (mit Hunderterübergang), 3 Ziffern = letzte drei Stellen (mit Tausenderübergang),
