@@ -21,6 +21,30 @@ function nachweisZeilen(liste: Etappe[], trenner: string): string[] {
   )
 }
 
+function rohdatenZeilen(liste: RohdatenEintrag[], trenner: string): string[] {
+  return liste.map((r) =>
+    [
+      formatDatum(r.datum),
+      r.fahrzeug,
+      r.ort,
+      r.strasse,
+      r.zweck,
+      r.abfahrt,
+      r.ankunft,
+      String(r.kmStandEnde),
+      r.dienstlich ? 'dienstlich' : 'privat',
+    ].join(trenner),
+  )
+}
+
+function sortiertEtappen(liste: Etappe[]): Etappe[] {
+  return [...liste].sort((a, b) => (a.datum + a.abfahrt).localeCompare(b.datum + b.abfahrt))
+}
+
+function sortiertRohdaten(liste: RohdatenEintrag[]): RohdatenEintrag[] {
+  return [...liste].sort((a, b) => (a.datum + a.abfahrt + a.ankunft).localeCompare(b.datum + b.abfahrt + b.ankunft))
+}
+
 function mitKopf(zeilen: string[], kopfzeile: boolean, kopf: string[], trenner: string): string {
   const z = [...zeilen]
   if (kopfzeile) z.unshift(kopf.join(trenner))
@@ -73,26 +97,43 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
       .sort((a, b) => (a.datum + a.abfahrt + a.ankunft).localeCompare(b.datum + b.abfahrt + b.ankunft))
   }, [rohdaten, von, bis, nurNichtExportiert])
 
-  const rohdatenTextBasis = useMemo(() => {
-    const zeilen = rohdatenGefiltert.map((r) =>
-      [
-        formatDatum(r.datum),
-        r.fahrzeug,
-        r.ort,
-        r.strasse,
-        r.zweck,
-        r.abfahrt,
-        r.ankunft,
-        String(r.kmStandEnde),
-        r.dienstlich ? 'dienstlich' : 'privat',
-      ].join('\t'),
-    )
-    return mitKopf(zeilen, kopfzeile, ROHDATEN_KOPF, '\t')
-  }, [rohdatenGefiltert, kopfzeile])
+  const rohdatenTextBasis = useMemo(
+    () => mitKopf(rohdatenZeilen(rohdatenGefiltert, '\t'), kopfzeile, ROHDATEN_KOPF, '\t'),
+    [rohdatenGefiltert, kopfzeile],
+  )
   const rohdatenText = useMemo(
     () => mitTabDarstellung(rohdatenTextBasis, tabAlsZeichen),
     [rohdatenTextBasis, tabAlsZeichen],
   )
+
+  // Standard-Export: immer alle noch nicht exportierten Daten, unabhängig von Von/Bis.
+  const radStandard = useMemo(
+    () => sortiertEtappen(etappen.filter((e) => e.dienstlich && !e.exportiert && e.fahrzeug === 'Rad')),
+    [etappen],
+  )
+  const autoStandard = useMemo(
+    () => sortiertEtappen(etappen.filter((e) => e.dienstlich && !e.exportiert && e.fahrzeug === 'Auto')),
+    [etappen],
+  )
+  const rohdatenStandard = useMemo(() => sortiertRohdaten(rohdaten.filter((r) => !r.exportiert)), [rohdaten])
+  const anzahlStandard = radStandard.length + autoStandard.length + rohdatenStandard.length
+
+  function handleStandardExport() {
+    const inhalt = [
+      ['Rad', ...nachweisZeilen(radStandard, '\t')].join('\n'),
+      ['Auto', ...nachweisZeilen(autoStandard, '\t')].join('\n'),
+      ['Rohdaten', ...rohdatenZeilen(rohdatenStandard, '\t')].join('\n'),
+    ].join('\n\n')
+    handleDownload('Standard-Export.txt', inhalt)
+  }
+
+  async function handleStandardMarkExportiert() {
+    const radAutoIds = new Set([...radStandard, ...autoStandard].map((e) => e.id))
+    await onChange(etappen.map((e) => (radAutoIds.has(e.id) ? { ...e, exportiert: true } : e)))
+    const rohdatenIds = new Set(rohdatenStandard.map((r) => r.id))
+    await onChangeRohdaten(rohdaten.map((r) => (rohdatenIds.has(r.id) ? { ...r, exportiert: true } : r)))
+    setMeldung('Alle Standard-Export-Daten als exportiert markiert.')
+  }
 
   async function handleCopy(t: string) {
     try {
@@ -146,6 +187,19 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
   return (
     <div className="form">
       <h2>Export</h2>
+
+      <p className="hinweis">
+        Für die regelmäßige Übertragung vom Smartphone: eine Datei mit allen noch nicht exportierten Daten, in drei
+        Blöcken (je mit "Rad"/"Auto"/"Rohdaten" markiert, dann die Zeilen ohne Spalten-Kopfzeile, echte Tabulatoren).
+      </p>
+      <div className="segmented">
+        <button type="button" className="primary" onClick={handleStandardExport} disabled={anzahlStandard === 0}>
+          Standard-Export-Download
+        </button>
+        <button type="button" onClick={handleStandardMarkExportiert} disabled={anzahlStandard === 0}>
+          Als exportiert markieren
+        </button>
+      </div>
 
       <div className="segmented">
         <button type="button" className={modus === 'nachweis' ? 'active' : ''} onClick={() => setModus('nachweis')}>
