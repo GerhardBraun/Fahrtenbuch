@@ -38,6 +38,10 @@ h2 {
   margin-top: 0;
 }
 
+.kompakt-kopf {
+  margin-bottom: -0.5rem;
+}
+
 .form {
   display: flex;
   flex-direction: column;
@@ -59,6 +63,25 @@ form label.checkbox {
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
+}
+
+.form label.feld-zeile,
+form label.feld-zeile {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.feld-zeile > span {
+  width: 3.6rem;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.feld-zeile input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }
 
 input,

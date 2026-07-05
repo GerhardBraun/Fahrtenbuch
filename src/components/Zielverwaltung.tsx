@@ -16,8 +16,8 @@ export default function Zielverwaltung({ ziele, zieleZweck, onZieleChange, onZie
 
   return (
     <div className="form">
-      <h2>Ziele</h2>
-      <div className="segmented">
+      <h2 className="kompakt-kopf">Ziele</h2>
+      <div className="segmented aktionen">
         <button type="button" className={subTab === 'ziele' ? 'active' : ''} onClick={() => setSubTab('ziele')}>
           Ziele
         </button>
@@ -127,12 +127,12 @@ function ZieleListe({
 
   return (
     <>
-      <label>
-        Ort
+      <label className="feld-zeile">
+        <span>Ort</span>
         <input value={ort} onChange={(e) => setOrt(e.target.value)} />
       </label>
-      <label>
-        Straße
+      <label className="feld-zeile">
+        <span>Straße</span>
         <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
       </label>
       <div className="werte-zeile">
@@ -268,16 +268,16 @@ function ZielZweckListe({
 
   return (
     <>
-      <label>
-        Ort
+      <label className="feld-zeile">
+        <span>Ort</span>
         <input value={ort} onChange={(e) => setOrt(e.target.value)} />
       </label>
-      <label>
-        Straße
+      <label className="feld-zeile">
+        <span>Straße</span>
         <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
       </label>
-      <label>
-        Zweck
+      <label className="feld-zeile">
+        <span>Zweck</span>
         <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
       </label>
       <div className="werte-zeile">

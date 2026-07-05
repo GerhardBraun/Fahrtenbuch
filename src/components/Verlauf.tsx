@@ -72,7 +72,7 @@ export default function Verlauf({ etappen, onChange }: Props) {
 
   return (
     <div className="form">
-      <h2>Verlauf</h2>
+      <h2 className="kompakt-kopf">Verlauf</h2>
 
       <div className="kopf-zeile">
         <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
@@ -106,16 +106,16 @@ export default function Verlauf({ etappen, onChange }: Props) {
         </div>
       </div>
 
-      <label>
-        Start
+      <label className="feld-zeile">
+        <span>Start</span>
         <input value={start} onChange={(e) => setStart(e.target.value)} />
       </label>
-      <label>
-        Ziel
+      <label className="feld-zeile">
+        <span>Ziel</span>
         <input value={ziel} onChange={(e) => setZiel(e.target.value)} />
       </label>
-      <label>
-        Anlass/Zweck
+      <label className="feld-zeile">
+        <span>Anlass/<br />Zweck</span>
         <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
       </label>
 
