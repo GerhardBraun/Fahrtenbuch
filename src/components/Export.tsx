@@ -83,6 +83,19 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
     }
   }
 
+  function handleDownload(dateiname: string, inhalt: string) {
+    const blob = new Blob([inhalt], { type: 'text/tab-separated-values;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = dateiname
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setMeldung('Datei heruntergeladen. Bitte als Anhang verschicken, nicht als Text einfügen.')
+  }
+
   async function handleMarkExportiert(liste: Etappe[]) {
     const ids = new Set(liste.map((e) => e.id))
     await onChange(etappen.map((e) => (ids.has(e.id) ? { ...e, exportiert: true } : e)))
@@ -139,13 +152,23 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
         Kopfzeile einschließen
       </label>
 
+      <p className="hinweis">
+        Bei Umweg über WhatsApp/E-Mail bitte die Datei herunterladen und als Anhang verschicken – beim Einfügen als
+        Text gehen die Tabulatoren verloren.
+      </p>
+
       {modus === 'rohdaten' ? (
         <>
           <p className="hinweis">{rohdatenGefiltert.length} Zeile(n)</p>
           <textarea className="export-text" readOnly value={rohdatenText} rows={12} />
-          <button type="button" className="primary" onClick={() => handleCopy(rohdatenText)}>
-            In Zwischenablage kopieren
-          </button>
+          <div className="segmented">
+            <button type="button" className="primary" onClick={() => handleCopy(rohdatenText)}>
+              Kopieren
+            </button>
+            <button type="button" onClick={() => handleDownload('Rohdaten.txt', rohdatenText)}>
+              Herunterladen
+            </button>
+          </div>
         </>
       ) : (
         <>
@@ -154,6 +177,9 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
           <div className="segmented">
             <button type="button" className="primary" onClick={() => handleCopy(radText)}>
               Kopieren
+            </button>
+            <button type="button" onClick={() => handleDownload('Fahrtennachweis-Rad.txt', radText)}>
+              Herunterladen
             </button>
             <button type="button" onClick={() => handleMarkExportiert(radListe)} disabled={radListe.length === 0}>
               Als exportiert markieren
@@ -165,6 +191,9 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
           <div className="segmented">
             <button type="button" className="primary" onClick={() => handleCopy(autoText)}>
               Kopieren
+            </button>
+            <button type="button" onClick={() => handleDownload('Fahrtennachweis-Auto.txt', autoText)}>
+              Herunterladen
             </button>
             <button type="button" onClick={() => handleMarkExportiert(autoListe)} disabled={autoListe.length === 0}>
               Als exportiert markieren
