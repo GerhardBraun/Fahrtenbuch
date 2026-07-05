@@ -88,6 +88,11 @@ export default function App() {
     setEtappen(updated)
   }
 
+  async function updateRohdaten(updated: RohdatenEintrag[]) {
+    await saveRohdaten(updated)
+    setRohdaten(updated)
+  }
+
   async function updateZiele(updated: Ziel[]) {
     await saveZiele(updated)
     setZiele(updated)
@@ -138,7 +143,14 @@ export default function App() {
           />
         )}
         {tab === 'verlauf' && <Verlauf etappen={etappen} onChange={updateEtappen} />}
-        {tab === 'export' && <ExportView etappen={etappen} onChange={updateEtappen} rohdaten={rohdaten} />}
+        {tab === 'export' && (
+          <ExportView
+            etappen={etappen}
+            onChange={updateEtappen}
+            rohdaten={rohdaten}
+            onChangeRohdaten={updateRohdaten}
+          />
+        )}
         {tab === 'daten' && (
           <Daten
             historie={historie}

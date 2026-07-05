@@ -15,7 +15,7 @@ import {
 import { ortVorschlaege, strasseVorschlaege, zweckVorschlaege, type Vorschlag } from '../suggestions'
 import { addMinutes, nowTime, subMinutes, today } from '../timeUtils'
 import type { Etappe, FahrzeugId, Historie, KmStaende, RohdatenEintrag, Ziel, ZielZweck } from '../types'
-import { leereZielWerte, ZUHAUSE } from '../types'
+import { leereZielWerte, ZUHAUSE, ZUHAUSE_ORT, ZUHAUSE_STRASSE } from '../types'
 import Autocomplete from './Autocomplete'
 import { AutoIcon, RadIcon, SaveIcon } from './Icons'
 
@@ -152,7 +152,8 @@ export default function FahrtForm({
         newRohdatenEintrag({
           fahrzeug,
           datum,
-          ziel: zielText(ort, strasse),
+          ort: ort.trim(),
+          strasse: strasse.trim(),
           zweck: zweck.trim(),
           abfahrt,
           ankunft,
@@ -194,7 +195,8 @@ export default function FahrtForm({
         newRohdatenEintrag({
           fahrzeug,
           datum,
-          ziel,
+          ort: effektivZurueck ? ZUHAUSE_ORT : ort.trim(),
+          strasse: effektivZurueck ? ZUHAUSE_STRASSE : strasse.trim(),
           zweck: zweckText,
           abfahrt: standort ? undefined : abfahrt,
           ankunft: standort ? ankunft : undefined,

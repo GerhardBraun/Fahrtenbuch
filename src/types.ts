@@ -5,7 +5,9 @@ export const FAHRZEUGE: { id: FahrzeugId; label: string }[] = [
   { id: 'Auto', label: 'Auto' },
 ]
 
-export const ZUHAUSE = 'Gensungen, Hesslarer Str. 1'
+export const ZUHAUSE_ORT = 'Gensungen'
+export const ZUHAUSE_STRASSE = 'Hesslarer Str. 1'
+export const ZUHAUSE = `${ZUHAUSE_ORT}, ${ZUHAUSE_STRASSE}`
 
 export interface FahrzeugWerte {
   km: number
@@ -66,12 +68,14 @@ export interface RohdatenEintrag {
   id: string
   datum: string
   fahrzeug: FahrzeugId
-  ziel: string
+  ort: string
+  strasse: string
   zweck: string
   abfahrt: string // '' wenn nicht eingegeben (wurde errechnet)
   ankunft: string // '' wenn nicht eingegeben (wurde errechnet)
   kmStandEnde: number
   dienstlich: boolean
+  exportiert: boolean
 }
 
 export interface KmStaende {

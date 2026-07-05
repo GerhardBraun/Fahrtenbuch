@@ -5,6 +5,7 @@ interface Props {
   etappen: Etappe[]
   rohdaten: RohdatenEintrag[]
   onChange: (etappen: Etappe[]) => Promise<void>
+  onChangeRohdaten: (rohdaten: RohdatenEintrag[]) => Promise<void>
 }
 
 type Modus = 'nachweis' | 'rohdaten'
@@ -31,9 +32,9 @@ function mitTabDarstellung(text: string, tabAlsZeichen: boolean): string {
 }
 
 const NACHWEIS_KOPF = ['Datum', 'Abfahrt', 'Ankunft', 'Start', 'Ziel', 'Anlass/Zweck', 'Strecke']
-const ROHDATEN_KOPF = ['Datum', 'Fahrzeug', 'Ziel', 'Anlass/Zweck', 'Abfahrt', 'Ankunft', 'km-Stand', 'Art']
+const ROHDATEN_KOPF = ['Datum', 'Fahrzeug', 'Ort', 'Straße', 'Anlass/Zweck', 'Abfahrt', 'Ankunft', 'km-Stand', 'Art']
 
-export default function ExportView({ etappen, rohdaten, onChange }: Props) {
+export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdaten }: Props) {
   const [modus, setModus] = useState<Modus>('nachweis')
   const [von, setVon] = useState('')
   const [bis, setBis] = useState('')
@@ -68,15 +69,17 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
     return rohdaten
       .filter((r) => (von ? r.datum >= von : true))
       .filter((r) => (bis ? r.datum <= bis : true))
+      .filter((r) => (nurNichtExportiert ? !r.exportiert : true))
       .sort((a, b) => (a.datum + a.abfahrt + a.ankunft).localeCompare(b.datum + b.abfahrt + b.ankunft))
-  }, [rohdaten, von, bis])
+  }, [rohdaten, von, bis, nurNichtExportiert])
 
   const rohdatenTextBasis = useMemo(() => {
     const zeilen = rohdatenGefiltert.map((r) =>
       [
         formatDatum(r.datum),
         r.fahrzeug,
-        r.ziel,
+        r.ort,
+        r.strasse,
         r.zweck,
         r.abfahrt,
         r.ankunft,
@@ -125,7 +128,20 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
     setMeldung('Exportierte Einträge gelöscht.')
   }
 
+  async function handleMarkRohdatenExportiert() {
+    const ids = new Set(rohdatenGefiltert.map((r) => r.id))
+    await onChangeRohdaten(rohdaten.map((r) => (ids.has(r.id) ? { ...r, exportiert: true } : r)))
+    setMeldung('Als exportiert markiert.')
+  }
+
+  async function handleDeleteRohdatenExportiert() {
+    if (!confirm('Alle bereits exportierten Rohdaten-Einträge endgültig löschen?')) return
+    await onChangeRohdaten(rohdaten.filter((r) => !r.exportiert))
+    setMeldung('Exportierte Einträge gelöscht.')
+  }
+
   const anzahlExportiert = etappen.filter((e) => e.exportiert).length
+  const anzahlRohdatenExportiert = rohdaten.filter((r) => r.exportiert).length
 
   return (
     <div className="form">
@@ -154,16 +170,14 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
         Bis
         <input type="date" value={bis} onChange={(e) => setBis(e.target.value)} />
       </label>
-      {modus === 'nachweis' && (
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={nurNichtExportiert}
-            onChange={(e) => setNurNichtExportiert(e.target.checked)}
-          />
-          Nur nicht exportierte Einträge
-        </label>
-      )}
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={nurNichtExportiert}
+          onChange={(e) => setNurNichtExportiert(e.target.checked)}
+        />
+        Nur nicht exportierte Einträge
+      </label>
       <label className="checkbox">
         <input type="checkbox" checked={kopfzeile} onChange={(e) => setKopfzeile(e.target.checked)} />
         Kopfzeile einschließen
@@ -190,7 +204,17 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
             <button type="button" onClick={() => handleDownload('Rohdaten.txt', rohdatenTextBasis)}>
               Herunterladen
             </button>
+            <button
+              type="button"
+              onClick={handleMarkRohdatenExportiert}
+              disabled={rohdatenGefiltert.length === 0}
+            >
+              Als exportiert markieren
+            </button>
           </div>
+          <button type="button" onClick={handleDeleteRohdatenExportiert} disabled={anzahlRohdatenExportiert === 0}>
+            Exportierte löschen ({anzahlRohdatenExportiert})
+          </button>
         </>
       ) : (
         <>

@@ -259,7 +259,8 @@ export function computeEtappe(input: EtappeInput): Etappe {
 interface RohdatenInput {
   fahrzeug: FahrzeugId
   datum: string
-  ziel: string
+  ort: string
+  strasse: string
   zweck: string
   abfahrt?: string
   ankunft?: string
@@ -272,11 +273,13 @@ export function newRohdatenEintrag(input: RohdatenInput): RohdatenEintrag {
     id: newId('rd-'),
     datum: input.datum,
     fahrzeug: input.fahrzeug,
-    ziel: input.ziel,
+    ort: input.ort,
+    strasse: input.strasse,
     zweck: input.zweck,
     abfahrt: input.abfahrt ?? '',
     ankunft: input.ankunft ?? '',
     kmStandEnde: input.kmStandEnde,
     dienstlich: input.dienstlich,
+    exportiert: false,
   }
 }
