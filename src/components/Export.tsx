@@ -14,16 +14,20 @@ function formatDatum(datum: string): string {
   return `${t}.${m}.${j}`
 }
 
-function nachweisZeilen(liste: Etappe[]): string[] {
+function nachweisZeilen(liste: Etappe[], trenner: string): string[] {
   return liste.map((e) =>
-    [formatDatum(e.datum), e.abfahrt, e.ankunft, e.start, e.ziel, e.zweck, String(e.strecke)].join('\t'),
+    [formatDatum(e.datum), e.abfahrt, e.ankunft, e.start, e.ziel, e.zweck, String(e.strecke)].join(trenner),
   )
 }
 
-function mitKopf(zeilen: string[], kopfzeile: boolean, kopf: string[]): string {
+function mitKopf(zeilen: string[], kopfzeile: boolean, kopf: string[], trenner: string): string {
   const z = [...zeilen]
-  if (kopfzeile) z.unshift(kopf.join('\t'))
+  if (kopfzeile) z.unshift(kopf.join(trenner))
   return z.join('\n')
+}
+
+function mitTabDarstellung(text: string, tabAlsZeichen: boolean): string {
+  return tabAlsZeichen ? text.split('\t').join('^t') : text
 }
 
 const NACHWEIS_KOPF = ['Datum', 'Abfahrt', 'Ankunft', 'Start', 'Ziel', 'Anlass/Zweck', 'Strecke']
@@ -35,6 +39,7 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
   const [bis, setBis] = useState('')
   const [nurNichtExportiert, setNurNichtExportiert] = useState(true)
   const [kopfzeile, setKopfzeile] = useState(false)
+  const [tabAlsZeichen, setTabAlsZeichen] = useState(true)
   const [meldung, setMeldung] = useState('')
 
   const nachweisBasis = useMemo(() => {
@@ -48,8 +53,16 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
 
   const radListe = useMemo(() => nachweisBasis.filter((e) => e.fahrzeug === 'Rad'), [nachweisBasis])
   const autoListe = useMemo(() => nachweisBasis.filter((e) => e.fahrzeug === 'Auto'), [nachweisBasis])
-  const radText = useMemo(() => mitKopf(nachweisZeilen(radListe), kopfzeile, NACHWEIS_KOPF), [radListe, kopfzeile])
-  const autoText = useMemo(() => mitKopf(nachweisZeilen(autoListe), kopfzeile, NACHWEIS_KOPF), [autoListe, kopfzeile])
+  const radTextBasis = useMemo(
+    () => mitKopf(nachweisZeilen(radListe, '\t'), kopfzeile, NACHWEIS_KOPF, '\t'),
+    [radListe, kopfzeile],
+  )
+  const autoTextBasis = useMemo(
+    () => mitKopf(nachweisZeilen(autoListe, '\t'), kopfzeile, NACHWEIS_KOPF, '\t'),
+    [autoListe, kopfzeile],
+  )
+  const radText = useMemo(() => mitTabDarstellung(radTextBasis, tabAlsZeichen), [radTextBasis, tabAlsZeichen])
+  const autoText = useMemo(() => mitTabDarstellung(autoTextBasis, tabAlsZeichen), [autoTextBasis, tabAlsZeichen])
 
   const rohdatenGefiltert = useMemo(() => {
     return rohdaten
@@ -58,7 +71,7 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
       .sort((a, b) => (a.datum + a.abfahrt + a.ankunft).localeCompare(b.datum + b.abfahrt + b.ankunft))
   }, [rohdaten, von, bis])
 
-  const rohdatenText = useMemo(() => {
+  const rohdatenTextBasis = useMemo(() => {
     const zeilen = rohdatenGefiltert.map((r) =>
       [
         formatDatum(r.datum),
@@ -71,8 +84,12 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
         r.dienstlich ? 'dienstlich' : 'privat',
       ].join('\t'),
     )
-    return mitKopf(zeilen, kopfzeile, ROHDATEN_KOPF)
+    return mitKopf(zeilen, kopfzeile, ROHDATEN_KOPF, '\t')
   }, [rohdatenGefiltert, kopfzeile])
+  const rohdatenText = useMemo(
+    () => mitTabDarstellung(rohdatenTextBasis, tabAlsZeichen),
+    [rohdatenTextBasis, tabAlsZeichen],
+  )
 
   async function handleCopy(t: string) {
     try {
@@ -151,10 +168,15 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
         <input type="checkbox" checked={kopfzeile} onChange={(e) => setKopfzeile(e.target.checked)} />
         Kopfzeile einschließen
       </label>
+      <label className="checkbox">
+        <input type="checkbox" checked={tabAlsZeichen} onChange={(e) => setTabAlsZeichen(e.target.checked)} />
+        Tabulatoren als ^t einfügen
+      </label>
 
       <p className="hinweis">
-        Bei Umweg über WhatsApp/E-Mail bitte die Datei herunterladen und als Anhang verschicken – beim Einfügen als
-        Text gehen die Tabulatoren verloren.
+        Bei Umweg über WhatsApp/E-Mail: „Kopieren" nutzt „^t" statt Tabulator (übersteht den Versand als Text – am
+        Laptop vor dem Einfügen ^t durch Tabulator ersetzen). „Herunterladen" erzeugt immer eine Datei mit echten
+        Tabulatoren zum Verschicken als Anhang.
       </p>
 
       {modus === 'rohdaten' ? (
@@ -165,7 +187,7 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
             <button type="button" className="primary" onClick={() => handleCopy(rohdatenText)}>
               Kopieren
             </button>
-            <button type="button" onClick={() => handleDownload('Rohdaten.txt', rohdatenText)}>
+            <button type="button" onClick={() => handleDownload('Rohdaten.txt', rohdatenTextBasis)}>
               Herunterladen
             </button>
           </div>
@@ -178,7 +200,7 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
             <button type="button" className="primary" onClick={() => handleCopy(radText)}>
               Kopieren
             </button>
-            <button type="button" onClick={() => handleDownload('Fahrtennachweis-Rad.txt', radText)}>
+            <button type="button" onClick={() => handleDownload('Fahrtennachweis-Rad.txt', radTextBasis)}>
               Herunterladen
             </button>
             <button type="button" onClick={() => handleMarkExportiert(radListe)} disabled={radListe.length === 0}>
@@ -192,7 +214,7 @@ export default function ExportView({ etappen, rohdaten, onChange }: Props) {
             <button type="button" className="primary" onClick={() => handleCopy(autoText)}>
               Kopieren
             </button>
-            <button type="button" onClick={() => handleDownload('Fahrtennachweis-Auto.txt', autoText)}>
+            <button type="button" onClick={() => handleDownload('Fahrtennachweis-Auto.txt', autoTextBasis)}>
               Herunterladen
             </button>
             <button type="button" onClick={() => handleMarkExportiert(autoListe)} disabled={autoListe.length === 0}>
