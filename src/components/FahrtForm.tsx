@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   computeEinzelfahrt,
   computeEtappe,
@@ -35,11 +35,15 @@ interface Props {
 
 type Modus = 'einzel' | 'etappe'
 
-function offenerStandort(etappen: Etappe[], fahrzeug: FahrzeugId): Etappe | null {
-  const relevante = etappen.filter((e) => e.fahrzeug === fahrzeug)
-  if (relevante.length === 0) return null
-  const letzte = relevante[relevante.length - 1]
-  return letzte.ziel === ZUHAUSE ? null : letzte
+/**
+ * Die zuletzt gespeicherte Etappe insgesamt (unabhängig vom Fahrzeug) – sofern sie nicht
+ * zu Hause endete. Eine leere ziel (private Einzelfahrt) zählt ebenfalls als "zu Hause",
+ * da sie bereits eine abgeschlossene Rundfahrt darstellt.
+ */
+function offenerStandort(etappen: Etappe[]): Etappe | null {
+  if (etappen.length === 0) return null
+  const letzte = etappen[etappen.length - 1]
+  return letzte.ziel === ZUHAUSE || letzte.ziel === '' ? null : letzte
 }
 
 export default function FahrtForm({
@@ -55,7 +59,8 @@ export default function FahrtForm({
   onHistorieChange,
 }: Props) {
   const [modus, setModus] = useState<Modus>('einzel')
-  const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
+  const [fahrzeug, setFahrzeug] = useState<FahrzeugId>(() => offenerStandort(etappen)?.fahrzeug ?? 'Rad')
+  const [dienstlich, setDienstlich] = useState(() => offenerStandort(etappen)?.dienstlich ?? true)
   const [datum, setDatum] = useState(today())
   const [ort, setOrt] = useState('')
   const [strasse, setStrasse] = useState('')
@@ -67,10 +72,20 @@ export default function FahrtForm({
   const [meldung, setMeldung] = useState('')
   const [speichertGerade, setSpeichertGerade] = useState(false)
 
-  const standort = offenerStandort(etappen, fahrzeug)
+  const standort = offenerStandort(etappen)
   const start = standort ? standort.ziel : ZUHAUSE
   const lastKmStand = kmStaende[fahrzeug]
   const kmVorschau = kmStandEnde.trim() ? resolveKmEingabe(kmStandEnde, lastKmStand) : null
+
+  // Beim Fortsetzen einer Etappen-Kette Fahrzeug und dienstl./privat von der zuletzt
+  // gespeicherten Etappe übernehmen (statt sie erneut auswählen zu müssen).
+  useEffect(() => {
+    if (modus === 'etappe' && standort) {
+      setFahrzeug(standort.fahrzeug)
+      setDienstlich(standort.dienstlich)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modus, standort?.id])
   const effektivZurueck = modus === 'etappe' && !!standort && zurueck
 
   function berechneDauerMin(): number {
@@ -115,6 +130,7 @@ export default function FahrtForm({
   async function speichern(dienstlich: boolean) {
     if (speichertGerade) return
     setSpeichertGerade(true)
+    setDienstlich(dienstlich)
     try {
       await speichernInner(dienstlich)
     } finally {
@@ -445,10 +461,20 @@ export default function FahrtForm({
       {meldung && <p className="meldung">{meldung}</p>}
 
       <div className="segmented">
-        <button type="button" className="primary" onClick={() => speichern(true)} disabled={speichertGerade}>
+        <button
+          type="button"
+          className={dienstlich ? 'primary' : ''}
+          onClick={() => speichern(true)}
+          disabled={speichertGerade}
+        >
           Als dienstl. speichern
         </button>
-        <button type="button" onClick={() => speichern(false)} disabled={speichertGerade}>
+        <button
+          type="button"
+          className={!dienstlich ? 'primary' : ''}
+          onClick={() => speichern(false)}
+          disabled={speichertGerade}
+        >
           Als privat speichern
         </button>
       </div>
