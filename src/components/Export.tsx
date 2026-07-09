@@ -164,8 +164,9 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
   }
 
   async function handleDeleteExportiert() {
-    if (!confirm('Alle bereits exportierten Einträge endgültig löschen?')) return
+    if (!confirm('Alle bereits exportierten Einträge (Fahrtennachweis und Rohdaten) endgültig löschen?')) return
     await onChange(etappen.filter((e) => !e.exportiert))
+    await onChangeRohdaten(rohdaten.filter((r) => !r.exportiert))
     setMeldung('Exportierte Einträge gelöscht.')
   }
 
@@ -300,8 +301,12 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
             </button>
           </div>
 
-          <button type="button" onClick={handleDeleteExportiert} disabled={anzahlExportiert === 0}>
-            Exportierte löschen ({anzahlExportiert})
+          <button
+            type="button"
+            onClick={handleDeleteExportiert}
+            disabled={anzahlExportiert === 0 && anzahlRohdatenExportiert === 0}
+          >
+            Exportierte löschen ({anzahlExportiert + anzahlRohdatenExportiert})
           </button>
         </>
       )}
