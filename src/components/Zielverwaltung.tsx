@@ -127,43 +127,45 @@ function ZieleListe({
 
   return (
     <>
-      <label className="feld-zeile">
-        <span>Ort</span>
-        <input value={ort} onChange={(e) => setOrt(e.target.value)} />
-      </label>
-      <label className="feld-zeile">
-        <span>Straße</span>
-        <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
-      </label>
-      <div className="werte-zeile">
-        <label>
-          Rad km
-          <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
+      <div className="sticky-kopf">
+        <label className="feld-zeile">
+          <span>Ort</span>
+          <input value={ort} onChange={(e) => setOrt(e.target.value)} />
         </label>
-        <label>
-          Rad Min
-          <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
+        <label className="feld-zeile">
+          <span>Straße</span>
+          <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
         </label>
-        <label>
-          Auto km
-          <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
-        </label>
-        <label>
-          Auto Min
-          <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
-        </label>
-      </div>
+        <div className="werte-zeile">
+          <label>
+            Rad km
+            <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
+          </label>
+          <label>
+            Rad Min
+            <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
+          </label>
+          <label>
+            Auto km
+            <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
+          </label>
+          <label>
+            Auto Min
+            <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
+          </label>
+        </div>
 
-      <div className="aktionen">
-        <button type="button" className="primary" onClick={speichern}>
-          Speichern
-        </button>
-        <button type="button" onClick={loeschen} disabled={!selectedId}>
-          Löschen
-        </button>
-        <button type="button" onClick={neu}>
-          Leeren
-        </button>
+        <div className="aktionen">
+          <button type="button" className="primary" onClick={speichern}>
+            Speichern
+          </button>
+          <button type="button" onClick={loeschen} disabled={!selectedId}>
+            Löschen
+          </button>
+          <button type="button" onClick={neu}>
+            Leeren
+          </button>
+        </div>
       </div>
 
       <ul className="ziel-liste">
@@ -268,47 +270,49 @@ function ZielZweckListe({
 
   return (
     <>
-      <label className="feld-zeile">
-        <span>Ort</span>
-        <input value={ort} onChange={(e) => setOrt(e.target.value)} />
-      </label>
-      <label className="feld-zeile">
-        <span>Straße</span>
-        <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
-      </label>
-      <label className="feld-zeile">
-        <span>Zweck</span>
-        <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
-      </label>
-      <div className="werte-zeile">
-        <label>
-          Rad km
-          <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
+      <div className="sticky-kopf">
+        <label className="feld-zeile">
+          <span>Ort</span>
+          <input value={ort} onChange={(e) => setOrt(e.target.value)} />
         </label>
-        <label>
-          Rad Min
-          <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
+        <label className="feld-zeile">
+          <span>Straße</span>
+          <input value={strasse} onChange={(e) => setStrasse(e.target.value)} />
         </label>
-        <label>
-          Auto km
-          <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
+        <label className="feld-zeile">
+          <span>Zweck</span>
+          <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
         </label>
-        <label>
-          Auto Min
-          <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
-        </label>
-      </div>
+        <div className="werte-zeile">
+          <label>
+            Rad km
+            <input type="number" inputMode="numeric" value={radKm} onChange={(e) => setRadKm(e.target.value)} />
+          </label>
+          <label>
+            Rad Min
+            <input type="number" inputMode="numeric" value={radMin} onChange={(e) => setRadMin(e.target.value)} />
+          </label>
+          <label>
+            Auto km
+            <input type="number" inputMode="numeric" value={autoKm} onChange={(e) => setAutoKm(e.target.value)} />
+          </label>
+          <label>
+            Auto Min
+            <input type="number" inputMode="numeric" value={autoMin} onChange={(e) => setAutoMin(e.target.value)} />
+          </label>
+        </div>
 
-      <div className="aktionen">
-        <button type="button" className="primary" onClick={speichern}>
-          Speichern
-        </button>
-        <button type="button" onClick={loeschen} disabled={!selectedId}>
-          Löschen
-        </button>
-        <button type="button" onClick={neu}>
-          Leeren
-        </button>
+        <div className="aktionen">
+          <button type="button" className="primary" onClick={speichern}>
+            Speichern
+          </button>
+          <button type="button" onClick={loeschen} disabled={!selectedId}>
+            Löschen
+          </button>
+          <button type="button" onClick={neu}>
+            Leeren
+          </button>
+        </div>
       </div>
 
       <ul className="ziel-liste">

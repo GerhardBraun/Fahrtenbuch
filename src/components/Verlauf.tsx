@@ -74,76 +74,78 @@ export default function Verlauf({ etappen, onChange }: Props) {
     <div className="form">
       <h2 className="kompakt-kopf">Verlauf</h2>
 
-      <div className="kopf-zeile">
-        <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
-        <div className="fahrzeug-icons">
-          <button
-            type="button"
-            className={fahrzeug === 'Rad' ? 'active' : ''}
-            title="Fahrrad"
-            aria-label="Fahrrad"
-            onClick={() => setFahrzeug('Rad')}
-          >
-            <RadIcon />
+      <div className="sticky-kopf">
+        <div className="kopf-zeile">
+          <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+          <div className="fahrzeug-icons">
+            <button
+              type="button"
+              className={fahrzeug === 'Rad' ? 'active' : ''}
+              title="Fahrrad"
+              aria-label="Fahrrad"
+              onClick={() => setFahrzeug('Rad')}
+            >
+              <RadIcon />
+            </button>
+            <button
+              type="button"
+              className={fahrzeug === 'Auto' ? 'active' : ''}
+              title="Auto"
+              aria-label="Auto"
+              onClick={() => setFahrzeug('Auto')}
+            >
+              <AutoIcon />
+            </button>
+          </div>
+          <div className="segmented">
+            <button type="button" className={dienstlich ? 'active' : ''} onClick={() => setDienstlich(true)}>
+              dienstl.
+            </button>
+            <button type="button" className={!dienstlich ? 'active' : ''} onClick={() => setDienstlich(false)}>
+              privat
+            </button>
+          </div>
+        </div>
+
+        <label className="feld-zeile">
+          <span>Start</span>
+          <input value={start} onChange={(e) => setStart(e.target.value)} />
+        </label>
+        <label className="feld-zeile">
+          <span>Ziel</span>
+          <input value={ziel} onChange={(e) => setZiel(e.target.value)} />
+        </label>
+        <label className="feld-zeile">
+          <span>Anlass/<br />Zweck</span>
+          <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
+        </label>
+
+        <div className="zeit-zeile">
+          <label>
+            Abfahrt
+            <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
+          </label>
+          <label>
+            Ankunft
+            <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
+          </label>
+          <label>
+            km
+            <input type="number" inputMode="numeric" value={strecke} onChange={(e) => setStrecke(e.target.value)} />
+          </label>
+        </div>
+
+        <div className="aktionen">
+          <button type="button" className="primary" onClick={speichern} disabled={!selectedId}>
+            Speichern
           </button>
-          <button
-            type="button"
-            className={fahrzeug === 'Auto' ? 'active' : ''}
-            title="Auto"
-            aria-label="Auto"
-            onClick={() => setFahrzeug('Auto')}
-          >
-            <AutoIcon />
+          <button type="button" onClick={loeschen} disabled={!selectedId}>
+            Löschen
+          </button>
+          <button type="button" onClick={leeren}>
+            Leeren
           </button>
         </div>
-        <div className="segmented">
-          <button type="button" className={dienstlich ? 'active' : ''} onClick={() => setDienstlich(true)}>
-            dienstl.
-          </button>
-          <button type="button" className={!dienstlich ? 'active' : ''} onClick={() => setDienstlich(false)}>
-            privat
-          </button>
-        </div>
-      </div>
-
-      <label className="feld-zeile">
-        <span>Start</span>
-        <input value={start} onChange={(e) => setStart(e.target.value)} />
-      </label>
-      <label className="feld-zeile">
-        <span>Ziel</span>
-        <input value={ziel} onChange={(e) => setZiel(e.target.value)} />
-      </label>
-      <label className="feld-zeile">
-        <span>Anlass/<br />Zweck</span>
-        <input value={zweck} onChange={(e) => setZweck(e.target.value)} />
-      </label>
-
-      <div className="zeit-zeile">
-        <label>
-          Abfahrt
-          <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
-        </label>
-        <label>
-          Ankunft
-          <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
-        </label>
-        <label>
-          km
-          <input type="number" inputMode="numeric" value={strecke} onChange={(e) => setStrecke(e.target.value)} />
-        </label>
-      </div>
-
-      <div className="aktionen">
-        <button type="button" className="primary" onClick={speichern} disabled={!selectedId}>
-          Speichern
-        </button>
-        <button type="button" onClick={loeschen} disabled={!selectedId}>
-          Löschen
-        </button>
-        <button type="button" onClick={leeren}>
-          Leeren
-        </button>
       </div>
 
       <ul className="ziel-liste">
