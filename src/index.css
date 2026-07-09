@@ -3,6 +3,28 @@
   color-scheme: dark;
   color: #e8e8e8;
   background-color: #121212;
+
+  --color-gold: #b6a03a;
+  --color-gold-light: #d9c464;
+  --color-gold-bg: #3a331a;
+  --color-gold-text: #f0e2a8;
+  --color-gold-contrast: #1c1808;
+
+  --color-auto: #a0522d;
+  --color-auto-light: #d18a5c;
+  --color-auto-bg: #3a2418;
+  --color-auto-text: #f0cdb0;
+  --color-auto-contrast: #fff;
+}
+
+/* Wenn im Fahrt- oder Verlauf-Formular "Auto" als Fahrzeug gewählt ist, wechseln alle
+   sonst goldfarbenen Akzente (Buttons, Meldungen, Hover) auf die Auto-Farbe. */
+.fahrzeug-auto {
+  --color-gold: var(--color-auto);
+  --color-gold-light: var(--color-auto-light);
+  --color-gold-bg: var(--color-auto-bg);
+  --color-gold-text: var(--color-auto-text);
+  --color-gold-contrast: var(--color-auto-contrast);
 }
 
 * {
@@ -124,9 +146,9 @@ textarea::placeholder {
 }
 
 .segmented button.active {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #3b82f6;
+  background: var(--color-gold);
+  color: var(--color-gold-contrast);
+  border-color: var(--color-gold);
 }
 
 .icon-label {
@@ -160,9 +182,9 @@ textarea::placeholder {
 }
 
 .modus-toggle button.active {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #3b82f6;
+  background: var(--color-gold);
+  color: var(--color-gold-contrast);
+  border-color: var(--color-gold);
 }
 
 .fahrzeug-icons {
@@ -183,9 +205,15 @@ textarea::placeholder {
 }
 
 .fahrzeug-icons button.active {
-  background: #3b82f6;
+  background: var(--color-gold);
+  color: var(--color-gold-contrast);
+  border-color: var(--color-gold);
+}
+
+.fahrzeug-icons button.auto.active {
+  background: var(--color-auto);
   color: #fff;
-  border-color: #3b82f6;
+  border-color: var(--color-auto);
 }
 
 .zeit-zeile {
@@ -237,16 +265,16 @@ button {
 }
 
 button.primary {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #3b82f6;
+  background: var(--color-gold);
+  color: var(--color-gold-contrast);
+  border-color: var(--color-gold);
   font-weight: 600;
 }
 
 .meldung {
   padding: 0.6rem;
-  background: #1e2a45;
-  color: #cfe0ff;
+  background: var(--color-gold-bg);
+  color: var(--color-gold-text);
   border-radius: 8px;
   font-size: 0.9rem;
 }
@@ -258,7 +286,7 @@ button.primary {
 }
 
 .km-vorschau {
-  color: #60a5fa;
+  color: var(--color-gold-light);
   font-size: 0.8rem;
 }
 
@@ -292,7 +320,7 @@ button.primary {
 }
 
 .tabbar button.active {
-  color: #60a5fa;
+  color: var(--color-gold-light);
   font-weight: 700;
 }
 
@@ -386,8 +414,8 @@ button.primary {
 }
 
 .ziel-liste li.selected {
-  background: #1e2a45;
-  color: #cfe0ff;
+  background: var(--color-gold-bg);
+  color: var(--color-gold-text);
 }
 
 .ziel-liste li.hinweis {
@@ -469,8 +497,8 @@ button.primary {
 }
 
 .save-btn:hover {
-  color: #60a5fa;
-  border-color: #60a5fa;
+  color: var(--color-gold-light);
+  border-color: var(--color-gold-light);
 }
 
 .autocomplete-liste {

@@ -316,7 +316,7 @@ export default function FahrtForm({
   const zielfelderAusblenden = effektivZurueck
 
   return (
-    <div className="form">
+    <div className={`form ${fahrzeug === 'Auto' ? 'fahrzeug-auto' : ''}`}>
       <h2>Fahrt erfassen</h2>
 
       <div className="modus-zeile">
@@ -340,7 +340,7 @@ export default function FahrtForm({
           </button>
           <button
             type="button"
-            className={fahrzeug === 'Auto' ? 'active' : ''}
+            className={`auto ${fahrzeug === 'Auto' ? 'active' : ''}`}
             title="Auto"
             aria-label="Auto"
             onClick={() => setFahrzeug('Auto')}

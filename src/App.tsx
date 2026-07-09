@@ -24,8 +24,8 @@ type Tab = 'fahrt' | 'ziele' | 'verlauf' | 'export' | 'daten'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fahrt', label: 'Fahrt' },
-  { id: 'ziele', label: 'Ziele' },
   { id: 'verlauf', label: 'Verlauf' },
+  { id: 'ziele', label: 'Listen' },
   { id: 'export', label: 'Export' },
   { id: 'daten', label: 'Daten' },
 ]

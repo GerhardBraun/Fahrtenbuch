@@ -16,7 +16,7 @@ export default function Zielverwaltung({ ziele, zieleZweck, onZieleChange, onZie
 
   return (
     <div className="form">
-      <h2 className="kompakt-kopf">Ziele</h2>
+      <h2 className="kompakt-kopf">Listen</h2>
       <div className="segmented aktionen">
         <button type="button" className={subTab === 'ziele' ? 'active' : ''} onClick={() => setSubTab('ziele')}>
           Ziele

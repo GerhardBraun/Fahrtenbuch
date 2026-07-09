@@ -18,9 +18,10 @@ function formatDatumAnzeige(datum: string): string {
 
 export default function Verlauf({ etappen, onChange, rohdaten, onChangeRohdaten }: Props) {
   const [subTab, setSubTab] = useState<SubTab>('etappen')
+  const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
 
   return (
-    <div className="form">
+    <div className={`form ${fahrzeug === 'Auto' ? 'fahrzeug-auto' : ''}`}>
       <h2 className="kompakt-kopf">Verlauf</h2>
       <div className="segmented aktionen">
         <button type="button" className={subTab === 'etappen' ? 'active' : ''} onClick={() => setSubTab('etappen')}>
@@ -36,9 +37,9 @@ export default function Verlauf({ etappen, onChange, rohdaten, onChangeRohdaten 
       </div>
 
       {subTab === 'etappen' ? (
-        <EtappenListe etappen={etappen} onChange={onChange} />
+        <EtappenListe etappen={etappen} onChange={onChange} fahrzeug={fahrzeug} setFahrzeug={setFahrzeug} />
       ) : (
-        <RohdatenListe rohdaten={rohdaten} onChange={onChangeRohdaten} />
+        <RohdatenListe rohdaten={rohdaten} onChange={onChangeRohdaten} fahrzeug={fahrzeug} setFahrzeug={setFahrzeug} />
       )}
     </div>
   )
@@ -47,13 +48,16 @@ export default function Verlauf({ etappen, onChange, rohdaten, onChangeRohdaten 
 function EtappenListe({
   etappen,
   onChange,
+  fahrzeug,
+  setFahrzeug,
 }: {
   etappen: Etappe[]
   onChange: (etappen: Etappe[]) => Promise<void>
+  fahrzeug: FahrzeugId
+  setFahrzeug: (fahrzeug: FahrzeugId) => void
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [datum, setDatum] = useState('')
-  const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
   const [dienstlich, setDienstlich] = useState(true)
   const [start, setStart] = useState('')
   const [ziel, setZiel] = useState('')
@@ -133,7 +137,7 @@ function EtappenListe({
             </button>
             <button
               type="button"
-              className={fahrzeug === 'Auto' ? 'active' : ''}
+              className={`auto ${fahrzeug === 'Auto' ? 'active' : ''}`}
               title="Auto"
               aria-label="Auto"
               onClick={() => setFahrzeug('Auto')}
@@ -235,13 +239,16 @@ function EtappenListe({
 function RohdatenListe({
   rohdaten,
   onChange,
+  fahrzeug,
+  setFahrzeug,
 }: {
   rohdaten: RohdatenEintrag[]
   onChange: (rohdaten: RohdatenEintrag[]) => Promise<void>
+  fahrzeug: FahrzeugId
+  setFahrzeug: (fahrzeug: FahrzeugId) => void
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [datum, setDatum] = useState('')
-  const [fahrzeug, setFahrzeug] = useState<FahrzeugId>('Rad')
   const [dienstlich, setDienstlich] = useState(true)
   const [ort, setOrt] = useState('')
   const [strasse, setStrasse] = useState('')
@@ -324,7 +331,7 @@ function RohdatenListe({
             </button>
             <button
               type="button"
-              className={fahrzeug === 'Auto' ? 'active' : ''}
+              className={`auto ${fahrzeug === 'Auto' ? 'active' : ''}`}
               title="Auto"
               aria-label="Auto"
               onClick={() => setFahrzeug('Auto')}
