@@ -68,7 +68,15 @@ export default function Verlauf({ etappen, onChange }: Props) {
     leeren()
   }
 
+  async function privateLoeschen() {
+    if (!confirm(`Alle ${anzahlPrivat} privaten Fahrten endgültig aus dem Verlauf löschen?`)) return
+    const ausgewaehlteFahrt = etappen.find((e) => e.id === selectedId)
+    await onChange(etappen.filter((e) => e.dienstlich))
+    if (ausgewaehlteFahrt && !ausgewaehlteFahrt.dienstlich) leeren()
+  }
+
   const sortiert = [...etappen].reverse()
+  const anzahlPrivat = etappen.filter((e) => !e.dienstlich).length
 
   return (
     <div className="form">
@@ -180,6 +188,10 @@ export default function Verlauf({ etappen, onChange }: Props) {
         ))}
         {sortiert.length === 0 && <li className="hinweis">Noch keine Fahrten erfasst.</li>}
       </ul>
+
+      <button type="button" onClick={privateLoeschen} disabled={anzahlPrivat === 0}>
+        Private Fahrten aus dem Verlauf löschen ({anzahlPrivat})
+      </button>
     </div>
   )
 }
