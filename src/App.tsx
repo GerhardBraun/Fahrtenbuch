@@ -142,7 +142,9 @@ export default function App() {
             onZieleZweckChange={updateZieleZweck}
           />
         )}
-        {tab === 'verlauf' && <Verlauf etappen={etappen} onChange={updateEtappen} />}
+        {tab === 'verlauf' && (
+          <Verlauf etappen={etappen} onChange={updateEtappen} rohdaten={rohdaten} onChangeRohdaten={updateRohdaten} />
+        )}
         {tab === 'export' && (
           <ExportView
             etappen={etappen}
