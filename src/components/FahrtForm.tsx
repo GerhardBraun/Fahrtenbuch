@@ -366,8 +366,8 @@ export default function FahrtForm({
 
       {!zielfelderAusblenden && (
         <>
-          <label>
-            Ort
+          <label className="feld-zeile">
+            <span>Ort</span>
             <Autocomplete
               value={ort}
               onChange={setOrt}
@@ -377,8 +377,8 @@ export default function FahrtForm({
             />
           </label>
 
-          <label>
-            Straße
+          <label className="feld-zeile">
+            <span>Straße</span>
             <Autocomplete
               value={strasse}
               onChange={setStrasse}
@@ -388,8 +388,8 @@ export default function FahrtForm({
             />
           </label>
 
-          <label>
-            Anlass/Zweck
+          <label className="feld-zeile">
+            <span>Anlass/<br />Zweck</span>
             <Autocomplete
               value={zweck}
               onChange={setZweck}
@@ -399,7 +399,7 @@ export default function FahrtForm({
             />
           </label>
 
-          <div className="segmented">
+          <div className="segmented aktionen">
             <button type="button" className="icon-label" onClick={handleAlsZiel}>
               <SaveIcon /> Ziel
             </button>
@@ -410,41 +410,48 @@ export default function FahrtForm({
         </>
       )}
 
-      <label>
-        Datum
-        <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
-      </label>
+      <div className="zeit-zeile">
+        <label>
+          Datum
+          <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+        </label>
 
-      {modus === 'einzel' && (
-        <div className="zeit-zeile">
-          <label>
-            Abfahrtszeit
-            <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
-          </label>
-          <label>
-            Ankunftszeit
-            <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
-          </label>
-        </div>
+        {modus === 'einzel' && (
+          <>
+            <label>
+              Abfahrt
+              <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
+            </label>
+            <label>
+              Ankunft
+              <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
+            </label>
+          </>
+        )}
+
+        {modus === 'etappe' &&
+          (standort ? (
+            <label>
+              Ankunft
+              <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
+            </label>
+          ) : (
+            <label>
+              Abfahrt
+              <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
+            </label>
+          ))}
+      </div>
+
+      {modus === 'etappe' && standort && abfahrtVorschau && (
+        <span className="km-vorschau">Abfahrt (berechnet): {abfahrtVorschau}</span>
+      )}
+      {modus === 'etappe' && !standort && ankunftVorschau && (
+        <span className="km-vorschau">Ankunft (berechnet): {ankunftVorschau}</span>
       )}
 
-      {modus === 'etappe' &&
-        (standort ? (
-          <label>
-            Ankunftszeit
-            <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
-            {abfahrtVorschau && <span className="km-vorschau">Abfahrt (berechnet): {abfahrtVorschau}</span>}
-          </label>
-        ) : (
-          <label>
-            Abfahrtszeit
-            <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
-            {ankunftVorschau && <span className="km-vorschau">Ankunft (berechnet): {ankunftVorschau}</span>}
-          </label>
-        ))}
-
-      <label>
-        km-Stand (nach der Fahrt)
+      <label className="feld-zeile">
+        <span>km-Stand</span>
         <input
           type="text"
           inputMode="numeric"
@@ -453,10 +460,10 @@ export default function FahrtForm({
           onChange={(e) => setKmStandEnde(e.target.value)}
           placeholder={`zuletzt: ${lastKmStand}`}
         />
-        {kmVorschau !== null && !Number.isNaN(kmVorschau) && String(kmVorschau) !== kmStandEnde.trim() && (
-          <span className="km-vorschau">→ {kmVorschau}</span>
-        )}
       </label>
+      {kmVorschau !== null && !Number.isNaN(kmVorschau) && String(kmVorschau) !== kmStandEnde.trim() && (
+        <span className="km-vorschau">→ {kmVorschau}</span>
+      )}
 
       {meldung && <p className="meldung">{meldung}</p>}
 

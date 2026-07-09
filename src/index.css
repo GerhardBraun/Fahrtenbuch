@@ -84,6 +84,11 @@ form label.feld-zeile {
   width: 100%;
 }
 
+.feld-zeile .autocomplete {
+  flex: 1;
+  min-width: 0;
+}
+
 input,
 select,
 textarea {
@@ -139,17 +144,17 @@ textarea::placeholder {
 .modus-toggle {
   display: flex;
   gap: 0.5rem;
-  flex: 1;
 }
 
 .modus-toggle button {
-  flex: 1;
-  padding: 0.6rem;
+  flex: 0 0 auto;
+  padding: 0.6rem 0.8rem;
   border-radius: 8px;
   border: 1px solid #3a3a3a;
   background: #1e1e1e;
   color: #e8e8e8;
   font-size: 0.95rem;
+  white-space: nowrap;
 }
 
 .modus-toggle button.active {
