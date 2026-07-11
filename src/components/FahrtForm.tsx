@@ -350,6 +350,21 @@ export default function FahrtForm({
         </div>
       </div>
 
+      <label className="feld-zeile">
+        <span>km-Stand</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={kmStandEnde}
+          onChange={(e) => setKmStandEnde(e.target.value)}
+          placeholder={`zuletzt: ${lastKmStand}`}
+        />
+      </label>
+      {kmVorschau !== null && !Number.isNaN(kmVorschau) && String(kmVorschau) !== kmStandEnde.trim() && (
+        <span className="km-vorschau">→ {kmVorschau}</span>
+      )}
+
       {modus === 'etappe' && (
         <>
           <p className="info">
@@ -448,21 +463,6 @@ export default function FahrtForm({
       )}
       {modus === 'etappe' && !standort && ankunftVorschau && (
         <span className="km-vorschau">Ankunft (berechnet): {ankunftVorschau}</span>
-      )}
-
-      <label className="feld-zeile">
-        <span>km-Stand</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={kmStandEnde}
-          onChange={(e) => setKmStandEnde(e.target.value)}
-          placeholder={`zuletzt: ${lastKmStand}`}
-        />
-      </label>
-      {kmVorschau !== null && !Number.isNaN(kmVorschau) && String(kmVorschau) !== kmStandEnde.trim() && (
-        <span className="km-vorschau">→ {kmVorschau}</span>
       )}
 
       {meldung && <p className="meldung">{meldung}</p>}
