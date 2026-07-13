@@ -257,7 +257,9 @@ export function computeEtappe(input: EtappeInput): Etappe {
     zweck,
     abfahrt: abfahrtEndgueltig,
     ankunft: ankunftEndgueltig,
-    kmStand: lastKmStand + strecke,
+    // Immer der tatsächlich eingegebene km-Stand, auch wenn strecke aus den Ziele-Werten
+    // stammt und nicht mit lastKmStand + strecke übereinstimmt.
+    kmStand: kmStandEnde,
     strecke,
     dienstlich,
     exportiert: false,

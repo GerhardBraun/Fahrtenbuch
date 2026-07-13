@@ -58,7 +58,7 @@ export default function FahrtForm({
   onZieleZweckChange,
   onHistorieChange,
 }: Props) {
-  const [modus, setModus] = useState<Modus>('einzel')
+  const [modus, setModus] = useState<Modus>(() => (offenerStandort(etappen) ? 'etappe' : 'einzel'))
   const [fahrzeug, setFahrzeug] = useState<FahrzeugId>(() => offenerStandort(etappen)?.fahrzeug ?? 'Rad')
   const [dienstlich, setDienstlich] = useState(() => offenerStandort(etappen)?.dienstlich ?? true)
   const [datum, setDatum] = useState(today())
@@ -91,7 +91,8 @@ export default function FahrtForm({
   function berechneDauerMin(): number {
     const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
     if (Number.isNaN(kmEnde)) return NaN
-    const werte = effektivZurueck ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
+    const werte =
+      effektivZurueck || start !== ZUHAUSE ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
     const strecke = werte && werte.km > 0 ? werte.km : kmEnde - lastKmStand
     return werte && werte.dauerMin > 0 ? werte.dauerMin : estimateDauerMin(fahrzeug, strecke)
   }
@@ -238,7 +239,8 @@ export default function FahrtForm({
         setMeldung(`km-Stand muss größer als der letzte Stand (${lastKmStand}) sein.`)
         return
       }
-      const werte = effektivZurueck ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
+      const werte =
+        effektivZurueck || start !== ZUHAUSE ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
       const neue = computeEtappe({
         fahrzeug,
         datum,
