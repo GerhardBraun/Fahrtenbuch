@@ -14,7 +14,7 @@ import {
   zielText,
 } from '../logic'
 import { ortVorschlaege, strasseVorschlaege, zweckVorschlaege, type Vorschlag } from '../suggestions'
-import { addMinutes, nowTime, subMinutes, today } from '../timeUtils'
+import { nowTime, subMinutes, today } from '../timeUtils'
 import type { Etappe, FahrzeugId, Historie, KmStaende, RohdatenEintrag, Ziel, ZielZweck } from '../types'
 import { leereZielWerte, ZUHAUSE, ZUHAUSE_ORT, ZUHAUSE_STRASSE } from '../types'
 import Autocomplete from './Autocomplete'
@@ -98,14 +98,8 @@ export default function FahrtForm({
   }
 
   const dauerVorschau = modus === 'etappe' && kmStandEnde.trim() ? berechneDauerMin() : NaN
-  const ankunftVorschau =
-    modus === 'etappe' && !standort && abfahrt && !Number.isNaN(dauerVorschau)
-      ? addMinutes(abfahrt, dauerVorschau)
-      : null
   const abfahrtVorschau =
-    modus === 'etappe' && standort && ankunft && !Number.isNaN(dauerVorschau)
-      ? subMinutes(ankunft, dauerVorschau)
-      : null
+    modus === 'etappe' && ankunft && !Number.isNaN(dauerVorschau) ? subMinutes(ankunft, dauerVorschau) : null
 
   function anwenden(v: Vorschlag) {
     if (v.ort !== undefined) setOrt(v.ort)
@@ -229,9 +223,8 @@ export default function FahrtForm({
     } else {
       const ziel = effektivZurueck ? ZUHAUSE : zielText(ort, strasse)
       const zweckText = effektivZurueck ? 'Rückfahrt' : zweck.trim()
-      const zeitFeld = standort ? ankunft : abfahrt
 
-      if (!ziel || !zweckText || !zeitFeld || !kmStandEnde) {
+      if (!ziel || !zweckText || !ankunft || !kmStandEnde) {
         setMeldung('Bitte alle Felder ausfüllen.')
         return
       }
@@ -247,8 +240,8 @@ export default function FahrtForm({
         start,
         ziel,
         zweck: zweckText,
-        abfahrt: standort ? undefined : abfahrt,
-        ankunft: standort ? ankunft : undefined,
+        abfahrt: undefined,
+        ankunft,
         kmStandEnde: kmEnde,
         lastKmStand,
         werte,
@@ -262,8 +255,8 @@ export default function FahrtForm({
           ort: effektivZurueck ? ZUHAUSE_ORT : ort.trim(),
           strasse: effektivZurueck ? ZUHAUSE_STRASSE : strasse.trim(),
           zweck: zweckText,
-          abfahrt: standort ? undefined : abfahrt,
-          ankunft: standort ? ankunft : undefined,
+          abfahrt: undefined,
+          ankunft,
           kmStandEnde: kmEnde,
           dienstlich,
         }),
@@ -446,25 +439,16 @@ export default function FahrtForm({
           </>
         )}
 
-        {modus === 'etappe' &&
-          (standort ? (
-            <label>
-              Ankunft
-              <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
-            </label>
-          ) : (
-            <label>
-              Abfahrt
-              <input type="time" value={abfahrt} onChange={(e) => setAbfahrt(e.target.value)} />
-            </label>
-          ))}
+        {modus === 'etappe' && (
+          <label>
+            Ankunft
+            <input type="time" value={ankunft} onChange={(e) => setAnkunft(e.target.value)} />
+          </label>
+        )}
       </div>
 
-      {modus === 'etappe' && standort && abfahrtVorschau && (
+      {modus === 'etappe' && abfahrtVorschau && (
         <span className="km-vorschau">Abfahrt (berechnet): {abfahrtVorschau}</span>
-      )}
-      {modus === 'etappe' && !standort && ankunftVorschau && (
-        <span className="km-vorschau">Ankunft (berechnet): {ankunftVorschau}</span>
       )}
 
       {meldung && <p className="meldung">{meldung}</p>}
