@@ -421,7 +421,7 @@ export default function FahrtForm({
       )}
 
       <div className="zeit-zeile">
-        <label>
+        <label className="datum-spalte">
           Datum
           <input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
         </label>

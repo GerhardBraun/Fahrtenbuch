@@ -222,8 +222,12 @@ textarea::placeholder {
 }
 
 .zeit-zeile label {
-  flex: 1;
+  flex: 2;
   min-width: 0;
+}
+
+.zeit-zeile label.datum-spalte {
+  flex: 3;
 }
 
 .zeit-zeile input {
