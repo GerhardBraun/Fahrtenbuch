@@ -94,6 +94,15 @@ export function findZiel(ziele: Ziel[], ort: string, strasse: string): Ziel | un
   return ziele.find((z) => gleich(z.ort, ort) && gleich(z.strasse, strasse))
 }
 
+/**
+ * Ziel-Treffer über den kombinierten Text (z.B. "Fritzlar, Dom"), wie er als start/ziel
+ * einer Etappe gespeichert ist – für die Rückfahrt, bei der kein separates Ort/Straße-Feld
+ * eingegeben wird, sondern nur der verlassene Standort als Text vorliegt.
+ */
+export function findZielByText(ziele: Ziel[], text: string): Ziel | undefined {
+  return ziele.find((z) => gleich(zielText(z.ort, z.strasse), text))
+}
+
 export function findZielZweck(zieleZweck: ZielZweck[], ort: string, strasse: string, zweck: string): ZielZweck | undefined {
   return zieleZweck.find((z) => gleich(z.ort, ort) && gleich(z.strasse, strasse) && gleich(z.zweck, zweck))
 }

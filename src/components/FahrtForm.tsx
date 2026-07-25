@@ -5,6 +5,7 @@ import {
   estimateDauerMin,
   findWerte,
   findZiel,
+  findZielByText,
   findZielZweck,
   kombiniereOrtStrasse,
   mitHistorieEintrag,
@@ -88,11 +89,20 @@ export default function FahrtForm({
   }, [modus, standort?.id])
   const effektivZurueck = modus === 'etappe' && !!standort && zurueck
 
+  // Ziele-/Ziel-und-Zweck-Werte gelten nur für dienstliche Etappen zwischen Zuhause und dem
+  // jeweiligen Ziel (Hin- oder Rückfahrt). Bei der Rückfahrt gibt es kein Ort/Straße-Feld,
+  // daher Suche über den als Text gespeicherten verlassenen Standort (start).
+  function ermittleEtappeWerte(dienstlichWert: boolean) {
+    if (!dienstlichWert) return undefined
+    if (effektivZurueck) return findZielByText(ziele, start)?.werte[fahrzeug]
+    if (start !== ZUHAUSE) return undefined
+    return findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
+  }
+
   function berechneDauerMin(): number {
     const kmEnde = resolveKmEingabe(kmStandEnde, lastKmStand)
     if (Number.isNaN(kmEnde)) return NaN
-    const werte =
-      effektivZurueck || start !== ZUHAUSE ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
+    const werte = ermittleEtappeWerte(dienstlich)
     const strecke = werte && werte.km > 0 ? werte.km : kmEnde - lastKmStand
     return werte && werte.dauerMin > 0 ? werte.dauerMin : estimateDauerMin(fahrzeug, strecke)
   }
@@ -232,8 +242,7 @@ export default function FahrtForm({
         setMeldung(`km-Stand muss größer als der letzte Stand (${lastKmStand}) sein.`)
         return
       }
-      const werte =
-        effektivZurueck || start !== ZUHAUSE ? undefined : findWerte(ziele, zieleZweck, fahrzeug, ort, strasse, zweck)
+      const werte = ermittleEtappeWerte(dienstlich)
       const neue = computeEtappe({
         fahrzeug,
         datum,
