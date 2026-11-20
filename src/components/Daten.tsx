@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react'
 import { mergeHistorien, mergeZieleListen, mergeZielZweckListen } from '../logic'
-import type { Historie, KmStaende, Ziel, ZielZweck } from '../types'
+import { mergeTankbelege } from '../tanken'
+import type { Historie, KmStaende, Tankbeleg, Ziel, ZielZweck } from '../types'
 
 interface Props {
   historie: Historie
   ziele: Ziel[]
   zieleZweck: ZielZweck[]
   kmStaende: KmStaende
+  tankbelege: Tankbeleg[]
   onHistorieChange: (historie: Historie) => Promise<void>
   onZieleChange: (ziele: Ziel[]) => Promise<void>
   onZieleZweckChange: (zieleZweck: ZielZweck[]) => Promise<void>
   onKmStaendeChange: (kmStaende: KmStaende) => Promise<void>
+  onTankbelegeChange: (belege: Tankbeleg[]) => Promise<void>
 }
 
 export default function Daten({
@@ -18,10 +21,12 @@ export default function Daten({
   ziele,
   zieleZweck,
   kmStaende,
+  tankbelege,
   onHistorieChange,
   onZieleChange,
   onZieleZweckChange,
   onKmStaendeChange,
+  onTankbelegeChange,
 }: Props) {
   const [importText, setImportText] = useState('')
   const [meldung, setMeldung] = useState('')
@@ -29,8 +34,8 @@ export default function Daten({
   const [autoKm, setAutoKm] = useState(String(kmStaende.Auto))
 
   const exportText = useMemo(
-    () => JSON.stringify({ historie, ziele, zieleZweck }, null, 2),
-    [historie, ziele, zieleZweck],
+    () => JSON.stringify({ historie, ziele, zieleZweck, tankbelege }, null, 2),
+    [historie, ziele, zieleZweck, tankbelege],
   )
 
   async function handleCopy() {
@@ -48,6 +53,7 @@ export default function Daten({
       historie?: Partial<Historie>
       ziele?: Ziel[]
       zieleZweck?: ZielZweck[]
+      tankbelege?: Tankbeleg[]
     }
     try {
       parsed = JSON.parse(importText)
@@ -63,15 +69,18 @@ export default function Daten({
     }
     const importZiele: Ziel[] = Array.isArray(parsed.ziele) ? parsed.ziele : []
     const importZielZweck: ZielZweck[] = Array.isArray(parsed.zieleZweck) ? parsed.zieleZweck : []
+    const importTankbelege: Tankbeleg[] = Array.isArray(parsed.tankbelege) ? parsed.tankbelege : []
 
     await onHistorieChange(mergeHistorien(historie, importHistorie))
     await onZieleChange(mergeZieleListen(ziele, importZiele))
     await onZieleZweckChange(mergeZielZweckListen(zieleZweck, importZielZweck))
+    await onTankbelegeChange(mergeTankbelege(tankbelege, importTankbelege))
 
     setImportText('')
     setMeldung(
       `Übernommen: bis zu ${importHistorie.orte.length} Orte, ${importHistorie.strassen.length} Straßen, ` +
-        `${importHistorie.zwecke.length} Zwecke, ${importZiele.length} Ziele, ${importZielZweck.length} Ziel-und-Zweck-Einträge ` +
+        `${importHistorie.zwecke.length} Zwecke, ${importZiele.length} Ziele, ${importZielZweck.length} Ziel-und-Zweck-Einträge, ` +
+        `${importTankbelege.length} Tankbelege ` +
         `(bereits vorhandene wurden übersprungen).`,
     )
   }
@@ -90,7 +99,7 @@ export default function Daten({
     <div className="form">
       <h2>Daten übertragen</h2>
       <p className="hinweis">
-        Zum Austausch der Listen (Ort/Straße/Zweck-Verlauf, Ziele, Ziel und Zweck) zwischen Geräten – z. B. vom PC
+        Zum Austausch der Listen (Ort/Straße/Zweck-Verlauf, Ziele, Ziel und Zweck, Tankbelege) zwischen Geräten – z. B. vom PC
         aufs Smartphone. Fahrten selbst werden hier nicht übertragen.
       </p>
 

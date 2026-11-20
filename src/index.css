@@ -530,3 +530,74 @@ button.primary {
 .autocomplete-liste li:hover {
   background: #2a2a2a;
 }
+
+/* Tanken */
+.tank-mengen {
+  align-items: flex-end;
+}
+
+.tank-mengen label.tank-voll {
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  padding-bottom: 0.4rem;
+}
+
+.tank-voll input {
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+}
+
+.tank-tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tank-tabelle th,
+.tank-tabelle td {
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid #2a2a2a;
+  text-align: right;
+  vertical-align: top;
+}
+
+.tank-tabelle thead th {
+  color: #999;
+  font-weight: 500;
+  font-size: 0.78rem;
+}
+
+.tank-tabelle tbody th,
+.tank-tabelle tfoot th {
+  text-align: left;
+  font-weight: 500;
+}
+
+.tank-tabelle th small {
+  display: block;
+  color: #999;
+  font-size: 0.72rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.tank-tabelle tfoot th,
+.tank-tabelle tfoot td {
+  border-top: 2px solid #3a3a3a;
+  border-bottom: none;
+  color: var(--color-gold-light);
+  font-weight: 600;
+}
+
+.tank-werte span {
+  width: auto;
+  min-width: 3.2rem;
+}
+
+.ziel-liste-text .badge-inline {
+  margin-left: 0.4rem;
+}

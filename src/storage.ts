@@ -1,5 +1,5 @@
 import { get, set } from 'idb-keyval'
-import type { Etappe, Historie, KmStaende, RohdatenEintrag, Ziel, ZielZweck } from './types'
+import type { Etappe, Historie, KmStaende, RohdatenEintrag, Tankbeleg, Ziel, ZielZweck } from './types'
 
 const ETAPPEN_KEY = 'etappen'
 const ROHDATEN_KEY = 'rohdaten'
@@ -7,6 +7,7 @@ const ZIELE_KEY = 'ziele'
 const ZIELE_ZWECK_KEY = 'zieleZweck'
 const HISTORIE_KEY = 'historie'
 const KMSTAENDE_KEY = 'kmstaende'
+const TANKBELEGE_KEY = 'tankbelege'
 
 const LEERE_HISTORIE: Historie = { orte: [], strassen: [], zwecke: [] }
 
@@ -56,4 +57,12 @@ export async function loadKmStaende(): Promise<KmStaende> {
 
 export async function saveKmStaende(kmStaende: KmStaende): Promise<void> {
   await set(KMSTAENDE_KEY, kmStaende)
+}
+
+export async function loadTankbelege(): Promise<Tankbeleg[]> {
+  return (await get<Tankbeleg[]>(TANKBELEGE_KEY)) ?? []
+}
+
+export async function saveTankbelege(belege: Tankbeleg[]): Promise<void> {
+  await set(TANKBELEGE_KEY, belege)
 }

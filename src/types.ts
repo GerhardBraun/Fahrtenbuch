@@ -82,3 +82,17 @@ export interface KmStaende {
   Rad: number
   Auto: number
 }
+
+/**
+ * Ein Tankbeleg (Auto). Verbrauch nach der Volltank-Methode: Die Mengen aller Belege seit dem
+ * vorherigen vollen Beleg gehören zur Strecke bis zum nächsten vollen Beleg.
+ * Der älteste Beleg kann eine Summe aus der bisherigen Buchführung sein (z.B. Stand 31.12.24).
+ */
+export interface Tankbeleg {
+  id: string
+  datum: string // YYYY-MM-DD
+  kmStand: number
+  liter: number
+  preis: number // Gesamtbetrag in €
+  voll?: boolean // false = nicht vollgetankt; fehlt = vollgetankt
+}

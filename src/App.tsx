@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Daten from './components/Daten'
 import ExportView from './components/Export'
 import FahrtForm from './components/FahrtForm'
+import Tanken from './components/Tanken'
 import Verlauf from './components/Verlauf'
 import Zielverwaltung from './components/Zielverwaltung'
 import {
@@ -9,23 +10,26 @@ import {
   loadHistorie,
   loadKmStaende,
   loadRohdaten,
+  loadTankbelege,
   loadZiele,
   loadZieleZweck,
   saveEtappen,
   saveHistorie,
   saveKmStaende,
   saveRohdaten,
+  saveTankbelege,
   saveZiele,
   saveZieleZweck,
 } from './storage'
-import type { Etappe, Historie, KmStaende, RohdatenEintrag, Ziel, ZielZweck } from './types'
+import type { Etappe, Historie, KmStaende, RohdatenEintrag, Tankbeleg, Ziel, ZielZweck } from './types'
 
-type Tab = 'fahrt' | 'ziele' | 'verlauf' | 'export' | 'daten'
+type Tab = 'fahrt' | 'ziele' | 'verlauf' | 'tanken' | 'export' | 'daten'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fahrt', label: 'Fahrt' },
   { id: 'verlauf', label: 'Verlauf' },
   { id: 'ziele', label: 'Listen' },
+  { id: 'tanken', label: 'Tanken' },
   { id: 'export', label: 'Export' },
   { id: 'daten', label: 'Daten' },
 ]
@@ -38,17 +42,19 @@ export default function App() {
   const [zieleZweck, setZieleZweck] = useState<ZielZweck[]>([])
   const [historie, setHistorie] = useState<Historie>({ orte: [], strassen: [], zwecke: [] })
   const [kmStaende, setKmStaende] = useState<KmStaende>({ Rad: 0, Auto: 0 })
+  const [tankbelege, setTankbelege] = useState<Tankbeleg[]>([])
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     ;(async () => {
-      const [e, r, z, zz, h, k] = await Promise.all([
+      const [e, r, z, zz, h, k, t] = await Promise.all([
         loadEtappen(),
         loadRohdaten(),
         loadZiele(),
         loadZieleZweck(),
         loadHistorie(),
         loadKmStaende(),
+        loadTankbelege(),
       ])
       setEtappen(e)
       setRohdaten(r)
@@ -56,6 +62,7 @@ export default function App() {
       setZieleZweck(zz)
       setHistorie(h)
       setKmStaende(k)
+      setTankbelege(t)
       setLoaded(true)
     })()
   }, [])
@@ -113,6 +120,11 @@ export default function App() {
     setKmStaende(updated)
   }
 
+  async function updateTankbelege(updated: Tankbeleg[]) {
+    await saveTankbelege(updated)
+    setTankbelege(updated)
+  }
+
   if (!loaded) {
     return <div className="loading">Lade…</div>
   }
@@ -145,6 +157,7 @@ export default function App() {
         {tab === 'verlauf' && (
           <Verlauf etappen={etappen} onChange={updateEtappen} rohdaten={rohdaten} onChangeRohdaten={updateRohdaten} />
         )}
+        {tab === 'tanken' && <Tanken belege={tankbelege} onChange={updateTankbelege} />}
         {tab === 'export' && (
           <ExportView
             etappen={etappen}
@@ -159,10 +172,12 @@ export default function App() {
             ziele={ziele}
             zieleZweck={zieleZweck}
             kmStaende={kmStaende}
+            tankbelege={tankbelege}
             onHistorieChange={updateHistorie}
             onZieleChange={updateZiele}
             onZieleZweckChange={updateZieleZweck}
             onKmStaendeChange={updateKmStaende}
+            onTankbelegeChange={updateTankbelege}
           />
         )}
       </main>
