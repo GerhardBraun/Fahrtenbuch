@@ -262,9 +262,19 @@ export default function ExportView({
   }
 
   async function handleDeleteExportiert() {
-    if (!confirm('Alle bereits exportierten Einträge (Fahrtennachweis und Rohdaten) endgültig löschen?')) return
+    const { entfernt, summenbeleg, belege } = tankZusammenfassung
+    const tankHinweis = summenbeleg
+      ? ` Von den Tankbelegen werden ${entfernt} gelöscht; der Beleg vom ${formatDatum(summenbeleg.datum)} wird zum Summenbeleg.`
+      : ''
+    if (
+      !confirm(
+        `Alle bereits exportierten Einträge (Fahrtennachweis, Rohdaten, Tankbelege) endgültig löschen?${tankHinweis}`,
+      )
+    )
+      return
     await onChange(etappen.filter((e) => !e.exportiert))
     await onChangeRohdaten(rohdaten.filter((r) => !r.exportiert))
+    if (summenbeleg) await onChangeTankbelege(belege)
     setMeldung('Exportierte Einträge gelöscht.')
   }
 
@@ -432,9 +442,9 @@ export default function ExportView({
           <button
             type="button"
             onClick={handleDeleteExportiert}
-            disabled={anzahlExportiert === 0 && anzahlRohdatenExportiert === 0}
+            disabled={anzahlExportiert + anzahlRohdatenExportiert + tankZusammenfassung.entfernt === 0}
           >
-            Exportierte löschen ({anzahlExportiert + anzahlRohdatenExportiert})
+            Exportierte löschen ({anzahlExportiert + anzahlRohdatenExportiert + tankZusammenfassung.entfernt})
           </button>
         </>
       )}
