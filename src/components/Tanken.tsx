@@ -81,7 +81,7 @@ export default function Tanken({ belege, onChange }: Props) {
     }
 
     if (selectedId) {
-      await onChange(belege.map((b) => (b.id === selectedId ? { id: b.id, ...daten } : b)))
+      await onChange(belege.map((b) => (b.id === selectedId ? { ...b, ...daten } : b)))
       setKmStand(String(km))
       setMeldung('Beleg geändert.')
     } else {

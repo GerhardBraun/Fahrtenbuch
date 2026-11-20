@@ -1,14 +1,18 @@
 import { useMemo, useState } from 'react'
-import type { Etappe, RohdatenEintrag } from '../types'
+import { tankExportZeilen, zusammenfassen } from '../tanken'
+import type { TankExportZeile } from '../tanken'
+import type { Etappe, RohdatenEintrag, Tankbeleg } from '../types'
 
 interface Props {
   etappen: Etappe[]
   rohdaten: RohdatenEintrag[]
   onChange: (etappen: Etappe[]) => Promise<void>
   onChangeRohdaten: (rohdaten: RohdatenEintrag[]) => Promise<void>
+  tankbelege: Tankbeleg[]
+  onChangeTankbelege: (belege: Tankbeleg[]) => Promise<void>
 }
 
-type Modus = 'nachweis' | 'rohdaten'
+type Modus = 'nachweis' | 'rohdaten' | 'tanken'
 
 function formatDatum(datum: string): string {
   const [j, m, t] = datum.split('-')
@@ -37,6 +41,34 @@ function rohdatenZeilen(liste: RohdatenEintrag[], trenner: string): string[] {
   )
 }
 
+/** Zahl für Excel: Dezimalkomma, keine Tausenderpunkte; leer, wenn nicht berechenbar. */
+function excelZahl(wert: number | null | undefined, stellen: number): string {
+  if (wert == null || !Number.isFinite(wert)) return ''
+  return wert.toFixed(stellen).replace('.', ',')
+}
+
+function tankZeilen(liste: TankExportZeile[], trenner: string): string[] {
+  return liste.map(({ beleg: b, letztes, sechsMonate, gesamt }) => {
+    const voll = b.voll !== false
+    const mittelSpalten = (m: typeof letztes) =>
+      voll && m ? [excelZahl(m.kmProTag, 1), excelZahl(m.literPro100, 2), excelZahl(m.preisPro100, 2)] : ['', '', '']
+    return [
+      formatDatum(b.datum),
+      String(b.kmStand),
+      voll ? '' : 'nicht voll',
+      excelZahl(b.liter, 2),
+      excelZahl(b.preis, 2),
+      excelZahl(b.liter > 0 ? b.preis / b.liter : null, 3),
+      ...mittelSpalten(letztes),
+      ...mittelSpalten(sechsMonate),
+      excelZahl(gesamt.liter, 2),
+      excelZahl(gesamt.preis, 2),
+      voll ? excelZahl(gesamt.literPro100, 2) : '',
+      voll ? excelZahl(gesamt.preisPro100, 2) : '',
+    ].join(trenner)
+  })
+}
+
 function sortiertEtappen(liste: Etappe[]): Etappe[] {
   return [...liste].sort((a, b) => (a.datum + a.abfahrt).localeCompare(b.datum + b.abfahrt))
 }
@@ -56,9 +88,34 @@ function mitTabDarstellung(text: string, tabAlsZeichen: boolean): string {
 }
 
 const NACHWEIS_KOPF = ['Datum', 'Abfahrt', 'Ankunft', 'Start', 'Ziel', 'Anlass/Zweck', 'Strecke']
+const TANK_KOPF = [
+  'Datum',
+  'km-Stand',
+  'voll',
+  'Menge',
+  'Preis',
+  '€/l',
+  'km/Tag (letztes)',
+  'l/100 km (letztes)',
+  '€/100 km (letztes)',
+  'km/Tag (6 Monate)',
+  'l/100 km (6 Monate)',
+  '€/100 km (6 Monate)',
+  'Menge gesamt',
+  'Kosten gesamt',
+  'l/100 km gesamt',
+  '€/100 km gesamt',
+]
 const ROHDATEN_KOPF = ['Datum', 'Fahrzeug', 'Ort', 'Straße', 'Anlass/Zweck', 'Abfahrt', 'Ankunft', 'km-Stand', 'Art']
 
-export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdaten }: Props) {
+export default function ExportView({
+  etappen,
+  rohdaten,
+  onChange,
+  onChangeRohdaten,
+  tankbelege,
+  onChangeTankbelege,
+}: Props) {
   const [modus, setModus] = useState<Modus>('nachweis')
   const [von, setVon] = useState('')
   const [bis, setBis] = useState('')
@@ -106,6 +163,43 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
     [rohdatenTextBasis, tabAlsZeichen],
   )
 
+  // Tanken: Werte je Beleg immer aus allen Belegen berechnet, erst danach gefiltert.
+  const tankGefiltert = useMemo(
+    () =>
+      tankExportZeilen(tankbelege)
+        .filter(({ beleg: b }) => (von ? b.datum >= von : true))
+        .filter(({ beleg: b }) => (bis ? b.datum <= bis : true))
+        .filter(({ beleg: b }) => (nurNichtExportiert ? !b.exportiert : true)),
+    [tankbelege, von, bis, nurNichtExportiert],
+  )
+  const tankTextBasis = useMemo(
+    () => mitKopf(tankZeilen(tankGefiltert, '\t'), kopfzeile, TANK_KOPF, '\t'),
+    [tankGefiltert, kopfzeile],
+  )
+  const tankText = useMemo(() => mitTabDarstellung(tankTextBasis, tabAlsZeichen), [tankTextBasis, tabAlsZeichen])
+  const tankZusammenfassung = useMemo(() => zusammenfassen(tankbelege), [tankbelege])
+
+  async function handleMarkTankExportiert() {
+    const ids = new Set(tankGefiltert.map((z) => z.beleg.id))
+    await onChangeTankbelege(tankbelege.map((b) => (ids.has(b.id) ? { ...b, exportiert: true } : b)))
+    setMeldung('Als exportiert markiert.')
+  }
+
+  async function handleTankZusammenfassen() {
+    const { entfernt, summenbeleg, belege } = tankZusammenfassung
+    if (!summenbeleg) return
+    const [j, m, t] = summenbeleg.datum.split('-')
+    if (
+      !confirm(
+        `${entfernt} exportierte Tankbeleg(e) löschen? Der Beleg vom ${t}.${m}.${j} wird zum Summenbeleg ` +
+          `(Menge und Preis = Summe aller Belege bis dahin).`,
+      )
+    )
+      return
+    await onChangeTankbelege(belege)
+    setMeldung(`${entfernt} Tankbeleg(e) gelöscht, Summenbeleg zum ${t}.${m}.${j} angelegt.`)
+  }
+
   // Standard-Export: immer alle noch nicht exportierten Daten, unabhängig von Von/Bis.
   const radStandard = useMemo(
     () => sortiertEtappen(etappen.filter((e) => e.dienstlich && !e.exportiert && e.fahrzeug === 'Rad')),
@@ -116,13 +210,15 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
     [etappen],
   )
   const rohdatenStandard = useMemo(() => sortiertRohdaten(rohdaten.filter((r) => !r.exportiert)), [rohdaten])
-  const anzahlStandard = radStandard.length + autoStandard.length + rohdatenStandard.length
+  const tankStandard = useMemo(() => tankExportZeilen(tankbelege).filter((z) => !z.beleg.exportiert), [tankbelege])
+  const anzahlStandard = radStandard.length + autoStandard.length + rohdatenStandard.length + tankStandard.length
 
   function handleStandardExport() {
     const inhalt = [
       ['Rad', ...nachweisZeilen(radStandard, '\t')].join('\n'),
       ['Auto', ...nachweisZeilen(autoStandard, '\t')].join('\n'),
       ['Rohdaten', ...rohdatenZeilen(rohdatenStandard, '\t')].join('\n'),
+      ['Tanken', ...tankZeilen(tankStandard, '\t')].join('\n'),
     ].join('\n\n')
     handleDownload('Standard-Export.txt', inhalt)
   }
@@ -132,6 +228,8 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
     await onChange(etappen.map((e) => (radAutoIds.has(e.id) ? { ...e, exportiert: true } : e)))
     const rohdatenIds = new Set(rohdatenStandard.map((r) => r.id))
     await onChangeRohdaten(rohdaten.map((r) => (rohdatenIds.has(r.id) ? { ...r, exportiert: true } : r)))
+    const tankIds = new Set(tankStandard.map((z) => z.beleg.id))
+    await onChangeTankbelege(tankbelege.map((b) => (tankIds.has(b.id) ? { ...b, exportiert: true } : b)))
     setMeldung('Alle Standard-Export-Daten als exportiert markiert.')
   }
 
@@ -190,8 +288,8 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
       <h2>Export</h2>
 
       <p className="hinweis">
-        Für die regelmäßige Übertragung vom Smartphone: eine Datei mit allen noch nicht exportierten Daten, in drei
-        Blöcken (je mit "Rad"/"Auto"/"Rohdaten" markiert, dann die Zeilen ohne Spalten-Kopfzeile, echte Tabulatoren).
+        Für die regelmäßige Übertragung vom Smartphone: eine Datei mit allen noch nicht exportierten Daten, in vier
+        Blöcken (je mit "Rad"/"Auto"/"Rohdaten"/"Tanken" markiert, dann die Zeilen ohne Spalten-Kopfzeile, echte Tabulatoren).
       </p>
       <div className="segmented">
         <button type="button" className="primary" onClick={handleStandardExport} disabled={anzahlStandard === 0}>
@@ -209,10 +307,17 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
         <button type="button" className={modus === 'rohdaten' ? 'active' : ''} onClick={() => setModus('rohdaten')}>
           Rohdaten (Sicherung)
         </button>
+        <button type="button" className={modus === 'tanken' ? 'active' : ''} onClick={() => setModus('tanken')}>
+          Tanken
+        </button>
       </div>
 
       {modus === 'nachweis' ? (
         <p className="hinweis">Private Fahrten werden nicht mit exportiert, getrennt nach Fahrzeug.</p>
+      ) : modus === 'tanken' ? (
+        <p className="hinweis">
+          Eine Zeile je Tankbeleg, aufsteigend, mit den Mittelwerten, die beim jeweiligen Beleg galten.
+        </p>
       ) : (
         <p className="hinweis">Genau die eingegebenen Rohdaten (dienstlich und privat), z.B. zur Sicherung in Excel.</p>
       )}
@@ -248,7 +353,30 @@ export default function ExportView({ etappen, rohdaten, onChange, onChangeRohdat
         Tabulatoren zum Verschicken als Anhang.
       </p>
 
-      {modus === 'rohdaten' ? (
+      {modus === 'tanken' ? (
+        <>
+          <p className="hinweis">{tankGefiltert.length} Zeile(n)</p>
+          <textarea className="export-text" readOnly value={tankText} rows={12} />
+          <div className="segmented">
+            <button type="button" className="primary" onClick={() => handleCopy(tankText)}>
+              Kopieren
+            </button>
+            <button type="button" onClick={() => handleDownload('Tankbelege.txt', tankTextBasis)}>
+              Herunterladen
+            </button>
+            <button type="button" onClick={handleMarkTankExportiert} disabled={tankGefiltert.length === 0}>
+              Als exportiert markieren
+            </button>
+          </div>
+          <button type="button" onClick={handleTankZusammenfassen} disabled={tankZusammenfassung.entfernt === 0}>
+            Exportierte löschen ({tankZusammenfassung.entfernt})
+          </button>
+          <p className="hinweis">
+            Gelöscht werden nur exportierte Belege vor dem Bezugsbeleg der 6-Monats-Berechnung; dieser wird zum
+            Summenbeleg. Jüngere Belege bleiben erhalten.
+          </p>
+        </>
+      ) : modus === 'rohdaten' ? (
         <>
           <p className="hinweis">{rohdatenGefiltert.length} Zeile(n)</p>
           <textarea className="export-text" readOnly value={rohdatenText} rows={12} />

@@ -95,4 +95,5 @@ export interface Tankbeleg {
   liter: number
   preis: number // Gesamtbetrag in €
   voll?: boolean // false = nicht vollgetankt; fehlt = vollgetankt
+  exportiert?: boolean
 }

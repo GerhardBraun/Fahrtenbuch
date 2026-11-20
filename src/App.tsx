@@ -164,6 +164,8 @@ export default function App() {
             onChange={updateEtappen}
             rohdaten={rohdaten}
             onChangeRohdaten={updateRohdaten}
+            tankbelege={tankbelege}
+            onChangeTankbelege={updateTankbelege}
           />
         )}
         {tab === 'daten' && (

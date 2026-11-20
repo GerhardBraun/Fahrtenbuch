@@ -123,31 +123,82 @@ export function verbrauchJeBeleg(belege: Tankbeleg[]): Map<string, number | null
  * Nicht vollgetankte Belege nach dem jüngsten vollen gehen nur in die Summen ein.
  */
 export function tankStatistik(belege: Tankbeleg[]): TankStatistik {
-  const sortiert = sortiereBelege(belege)
-  const n = sortiert.length
-  if (n === 0) return { letztes: null, sechsMonate: null, gesamt: null, offen: 0 }
+  return statistikBis(sortiereBelege(belege), belege.length - 1)
+}
 
-  const voll = volleIndizes(sortiert)
+/** Statistik, wie sie galt, als der Beleg mit Index endIdx (sortierte Liste) der jüngste war. */
+function statistikBis(sortiert: Tankbeleg[], endIdx: number): TankStatistik & { refIdx: number } {
+  if (endIdx < 0) return { letztes: null, sechsMonate: null, gesamt: null, offen: 0, refIdx: -1 }
+  const bisher = sortiert.slice(0, endIdx + 1)
+
+  const voll = volleIndizes(bisher)
   const letzterVoll = voll.length > 0 ? voll[voll.length - 1] : -1
-  const offen = n - 1 - letzterVoll
+  const offen = endIdx - letzterVoll
 
-  const letztes = voll.length >= 2 ? mittel(sortiert, voll[voll.length - 2], letzterVoll) : null
+  const letztes = voll.length >= 2 ? mittel(bisher, voll[voll.length - 2], letzterVoll) : null
 
-  const stichtag = letzterVoll >= 0 ? monateZurueck(sortiert[letzterVoll].datum, 6) : ''
-  const refIdx = [...voll].reverse().find((i) => sortiert[i].datum <= stichtag) ?? -1
-  const sechsMonate = refIdx >= 0 && refIdx < letzterVoll ? mittel(sortiert, refIdx, letzterVoll) : null
+  const stichtag = letzterVoll >= 0 ? monateZurueck(bisher[letzterVoll].datum, 6) : ''
+  const refIdx = [...voll].reverse().find((i) => bisher[i].datum <= stichtag) ?? -1
+  const sechsMonate = refIdx >= 0 && refIdx < letzterVoll ? mittel(bisher, refIdx, letzterVoll) : null
 
-  const bisVoll = sortiert.slice(0, letzterVoll + 1)
-  const km = letzterVoll >= 0 ? sortiert[letzterVoll].kmStand : 0
+  const bisVoll = bisher.slice(0, letzterVoll + 1)
+  const km = letzterVoll >= 0 ? bisher[letzterVoll].kmStand : 0
   const gesamt: TankGesamt = {
-    liter: summe(sortiert, 'liter'),
-    preis: summe(sortiert, 'preis'),
+    liter: summe(bisher, 'liter'),
+    preis: summe(bisher, 'preis'),
     km,
     literPro100: pro100(summe(bisVoll, 'liter'), km),
     preisPro100: pro100(summe(bisVoll, 'preis'), km),
   }
 
-  return { letztes, sechsMonate, gesamt, offen }
+  return { letztes, sechsMonate, gesamt, offen, refIdx }
+}
+
+/** Eine Exportzeile je Beleg (aufsteigend) mit den Werten, die beim jeweiligen Beleg galten. */
+export interface TankExportZeile {
+  beleg: Tankbeleg
+  letztes: TankMittel | null
+  sechsMonate: TankMittel | null
+  gesamt: TankGesamt
+}
+
+export function tankExportZeilen(belege: Tankbeleg[]): TankExportZeile[] {
+  const sortiert = sortiereBelege(belege)
+  return sortiert.map((beleg, i) => {
+    const st = statistikBis(sortiert, i)
+    return { beleg, letztes: st.letztes, sechsMonate: st.sechsMonate, gesamt: st.gesamt! }
+  })
+}
+
+/**
+ * Exportierte Belege löschen, ohne die Berechnungen zu zerstören: Der Beleg, der zuletzt Bezugspunkt
+ * der 6-Monats-Berechnung war, wird zum Summenbeleg (Datum und km-Stand bleiben, Menge und Preis =
+ * Summe aller Belege bis einschließlich ihm); alle älteren Belege entfallen.
+ * Damit nur Exportiertes verloren geht, wird ggf. ein älterer voller Beleg genommen, bis zu dem
+ * (einschließlich) alles exportiert ist.
+ */
+export function zusammenfassen(belege: Tankbeleg[]): { belege: Tankbeleg[]; entfernt: number; summenbeleg?: Tankbeleg } {
+  const sortiert = sortiereBelege(belege)
+  const { refIdx } = statistikBis(sortiert, sortiert.length - 1)
+  let c = -1
+  for (let i = 0; i <= refIdx; i++) {
+    if (!sortiert[i].exportiert) break
+    if (istVoll(sortiert[i])) c = i
+  }
+  if (c <= 0) return { belege, entfernt: 0 }
+
+  const alt = sortiert.slice(0, c + 1)
+  const summenbeleg: Tankbeleg = {
+    ...sortiert[c],
+    liter: runde(summe(alt, 'liter'), 2),
+    preis: runde(summe(alt, 'preis'), 2),
+  }
+  return { belege: [summenbeleg, ...sortiert.slice(c + 1)], entfernt: c, summenbeleg }
+}
+
+function runde(wert: number, stellen: number): number {
+  const f = 10 ** stellen
+  return Math.round(wert * f) / f
 }
 
 export function mergeTankbelege(bestehend: Tankbeleg[], importiert: Tankbeleg[]): Tankbeleg[] {
