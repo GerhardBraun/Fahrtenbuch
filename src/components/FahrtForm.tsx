@@ -127,9 +127,11 @@ export default function FahrtForm({
     setZurueck(false)
   }
 
+  // Eingaben bleiben beim Umschalten erhalten – oft fällt erst nach der Eingabe auf,
+  // dass es eine Etappe (bzw. Hin- und Rückfahrt) ist.
   function wechsleModus(neuerModus: Modus) {
     setModus(neuerModus)
-    resetForm()
+    setMeldung('')
   }
 
   async function speichern(dienstlich: boolean) {
